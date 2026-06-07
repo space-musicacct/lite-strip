@@ -18,9 +18,7 @@ final class ServerConfig
     public const DEFAULT_MAX_APIS = 5;
     public const MAX_MAX_APIS = 10;
 
-    public const MAX_CONCURRENT_API_REQUESTS = 5;
     public const API_ENDPOINT_TIMEOUT = 10;
-    public const OVERALL_TIMEOUT = 60;
 
     public const MAX_HTML_SIZE = 2 * 1024 * 1024; // 2 MB
     public const MAX_API_RESPONSE_SIZE = 1 * 1024 * 1024; // 1 MB
