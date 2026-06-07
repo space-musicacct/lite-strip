@@ -17,7 +17,7 @@ URL を渡すと、スタイリング属性を除去したクリーンな構造 
 
 ## 公開インスタンス
 
-**https://lite-strip.nx-space.com/** でインストール不要ですぐに利用できます。
+**[https://lite-strip.nx-space.com/](https://lite-strip.nx-space.com/)** でインストール不要ですぐに利用できます。
 
 > **注意:** 公開インスタンスではサーバーリソースの制約により `is_spa=true` は使用できません。
 > SPA レンダリングを利用するには、`ENABLE_SPA=true` でセルフホストしてください。
