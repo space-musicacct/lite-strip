@@ -5,6 +5,8 @@ services:
     restart: on-failure:5
     ports:
       - "8080:8080"
+    volumes:
+      - ./tests:/var/www/lite-strip/tests
     environment:
       - TZ=Asia/Tokyo
       - CHROMIUM_HOST=chromium

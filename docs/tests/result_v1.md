@@ -2,7 +2,8 @@
 
 - **Date:** 2026-06-08
 - **PHPUnit:** 13.2.0
-- **PHP:** 8.4.13
+- **PHP:** 8.5.7 (Docker: php:8.5-cli-alpine)
+- **Execution:** `docker compose exec lite-strip php vendor/bin/phpunit`
 - **Result:** 106 tests, 145 assertions — **ALL PASSED**
 
 ---
