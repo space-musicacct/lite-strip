@@ -185,55 +185,53 @@ readonly class RequestHandler
             'X-LiteStrip-Original-Size' => (string) $originalSize,
         ];
 
-        switch ($format) {
-            case 'json':
-                $jsonData = [
-                    'url' => $url,
-                    'finalUrl' => $finalUrl,
-                    'title' => $title,
-                    'contentHtml' => $cleanHtml,
-                    'contentText' => strip_tags($cleanHtml),
-                    'meta' => $meta,
-                    'detectedApis' => $apiResult['detectedApis'],
-                    'apiData' => $apiResult['apiData'],
-                    'failedApis' => $apiResult['failedApis'],
-                    'warnings' => [],
-                    'stats' => [
-                        'fetchedAt' => date('c'),
-                        'fetchTimeMs' => $fetchTimeMs,
-                        'processTimeMs' => $processTimeMs,
-                        'totalTimeMs' => $totalTimeMs,
-                        'apisDiscovered' => count($apiResult['detectedApis']),
-                        'apisFollowed' => count($apiResult['apiData']) + count($apiResult['failedApis']),
-                        'apisSucceeded' => count($apiResult['apiData']),
-                        'originalSizeBytes' => $originalSize,
-                        'outputSizeBytes' => 0,
-                    ],
-                ];
-                $body = $this->jsonFormatter->format($jsonData);
-                $jsonData['stats']['outputSizeBytes'] = strlen($body);
-                $body = $this->jsonFormatter->format($jsonData);
+        $contentType = match ($format) {
+            'json' => 'application/json; charset=utf-8',
+            'markdown' => 'text/markdown; charset=utf-8',
+            default => 'text/html; charset=utf-8',
+        };
 
-                $commonHeaders['X-LiteStrip-Output-Size'] = (string) strlen($body);
-                return new Response(200, array_merge($commonHeaders, [
-                    'Content-Type' => 'application/json; charset=utf-8',
-                ]), $body);
-
-            case 'markdown':
-                $body = $this->markdownFormatter->format($cleanHtml, $apiResult['apiData']);
-                $commonHeaders['X-LiteStrip-Output-Size'] = (string) strlen($body);
-                return new Response(200, array_merge($commonHeaders, [
-                    'Content-Type' => 'text/markdown; charset=utf-8',
-                ]), $body);
-
-            default:
-                $body = $this->htmlFormatter->format($url, $cleanHtml, $apiResult['apiData'], $apiResult['failedApis']);
-                $commonHeaders['X-LiteStrip-Output-Size'] = (string) strlen($body);
-                return new Response(200, array_merge($commonHeaders, [
-                    'Content-Type' => 'text/html; charset=utf-8',
-                    'Content-Security-Policy' => "default-src 'none'; img-src 'none'; media-src 'none'; frame-src 'none'; script-src 'none'; style-src 'none'; base-uri 'none'; form-action 'none'",
-                ]), $body);
+        if ($format === 'json') {
+            $jsonData = [
+                'url' => $url,
+                'finalUrl' => $finalUrl,
+                'title' => $title,
+                'contentHtml' => $cleanHtml,
+                'contentText' => strip_tags($cleanHtml),
+                'meta' => $meta,
+                'detectedApis' => $apiResult['detectedApis'],
+                'apiData' => $apiResult['apiData'],
+                'failedApis' => $apiResult['failedApis'],
+                'warnings' => [],
+                'stats' => [
+                    'fetchedAt' => date('c'),
+                    'fetchTimeMs' => $fetchTimeMs,
+                    'processTimeMs' => $processTimeMs,
+                    'totalTimeMs' => $totalTimeMs,
+                    'apisDiscovered' => count($apiResult['detectedApis']),
+                    'apisFollowed' => count($apiResult['apiData']) + count($apiResult['failedApis']),
+                    'apisSucceeded' => count($apiResult['apiData']),
+                    'originalSizeBytes' => $originalSize,
+                    'outputSizeBytes' => 0,
+                ],
+            ];
+            $body = $this->jsonFormatter->format($jsonData);
+            $jsonData['stats']['outputSizeBytes'] = strlen($body);
+            $body = $this->jsonFormatter->format($jsonData);
+        } elseif ($format === 'markdown') {
+            $body = $this->markdownFormatter->format($cleanHtml, $apiResult['apiData']);
+        } else {
+            $body = $this->htmlFormatter->format($url, $cleanHtml, $apiResult['apiData'], $apiResult['failedApis']);
         }
+
+        $commonHeaders['X-LiteStrip-Output-Size'] = (string) strlen($body);
+        $commonHeaders['Content-Type'] = $contentType;
+
+        if ($format === 'html') {
+            $commonHeaders['Content-Security-Policy'] = "default-src 'none'; img-src 'none'; media-src 'none'; frame-src 'none'; script-src 'none'; style-src 'none'; base-uri 'none'; form-action 'none'";
+        }
+
+        return new Response(200, $commonHeaders, $body);
     }
 
     /**
