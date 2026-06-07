@@ -17,6 +17,13 @@ LiteStrip takes a URL and returns clean, structured HTML with all styling attrib
 - **PHP Complete** — No Node.js, no Python, just PHP + ReactPHP
 - **Docker Ready** — Single `docker compose up -d --build` to run
 
+## Public Instance
+
+A public instance is available at **https://lite-strip.nx-space.com/** — no installation required.
+
+> **Note:** `is_spa=true` is disabled on the public instance due to server resource constraints.
+> To use SPA rendering, please self-host with `ENABLE_SPA=true`.
+
 ## Quick Start
 
 ```bash

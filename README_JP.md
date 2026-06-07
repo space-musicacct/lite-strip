@@ -15,6 +15,13 @@ URL を渡すと、スタイリング属性を除去したクリーンな構造 
 - **PHP 完結** — Node.js も Python も不要、PHP + ReactPHP のみ
 - **Docker 対応** — `docker compose up -d --build` ですぐ動く
 
+## 公開インスタンス
+
+**https://lite-strip.nx-space.com/** でインストール不要ですぐに利用できます。
+
+> **注意:** 公開インスタンスではサーバーリソースの制約により `is_spa=true` は使用できません。
+> SPA レンダリングを利用するには、`ENABLE_SPA=true` でセルフホストしてください。
+
 ## クイックスタート
 
 ```bash
