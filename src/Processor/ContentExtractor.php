@@ -27,8 +27,8 @@ class ContentExtractor
     {
         $doc = new \DOMDocument();
         @$doc->loadHTML(
-            '<?xml encoding="UTF-8">' . $html,
-            LIBXML_NOERROR | LIBXML_NOWARNING | LIBXML_HTML_NOIMPLIED
+            '<meta charset="UTF-8">' . $html,
+            LIBXML_NOERROR | LIBXML_NOWARNING
         );
 
         $xpath = new \DOMXPath($doc);

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 require __DIR__ . '/vendor/autoload.php';
 
+date_default_timezone_set('Asia/Tokyo');
+
 use LiteStrip\Config\ServerConfig;
 use LiteStrip\Fetcher\HtmlFetcher;
 use LiteStrip\Fetcher\UrlValidator;

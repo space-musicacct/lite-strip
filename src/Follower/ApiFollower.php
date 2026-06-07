@@ -60,29 +60,23 @@ class ApiFollower
         $apiData = [];
         $failedApis = [];
 
-        $promises = [];
         foreach ($validEndpoints as $url) {
-            $promises[$url] = $this->fetchEndpoint($url);
-        }
+            try {
+                $body = $this->fetcher->fetchText($url);
+                $data = json_decode($body, true);
+                $isJson = json_last_error() === JSON_ERROR_NONE;
 
-        $results = await(Promise\all(
-            array_map(
-                fn($promise) => $promise->then(
-                    fn($result) => $result,
-                    fn(\Throwable $e) => ['error' => $e->getMessage()]
-                ),
-                $promises
-            )
-        ));
-
-        foreach ($results as $url => $result) {
-            if (isset($result['error'])) {
+                $apiData[] = [
+                    'url' => $url,
+                    'status' => 200,
+                    'contentType' => $isJson ? 'application/json' : 'text/plain',
+                    'data' => $isJson ? $data : $body,
+                ];
+            } catch (\Throwable $e) {
                 $failedApis[] = [
                     'url' => $url,
-                    'error' => $this->classifyError($result['error']),
+                    'error' => $this->classifyError($e->getMessage()),
                 ];
-            } else {
-                $apiData[] = $result;
             }
         }
 

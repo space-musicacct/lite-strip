@@ -28,24 +28,47 @@ class DomProcessor
      */
     public function process(string $html): string
     {
+        $isFullDocument = (bool) preg_match('/<body[\s>]/i', $html);
+
         $doc = new \DOMDocument();
-        @$doc->loadHTML(
-            '<?xml encoding="UTF-8">' . $html,
-            LIBXML_NOERROR | LIBXML_NOWARNING | LIBXML_HTML_NOIMPLIED
-        );
+        if ($isFullDocument) {
+            @$doc->loadHTML(
+                '<meta charset="UTF-8">' . $html,
+                LIBXML_NOERROR | LIBXML_NOWARNING
+            );
+        } else {
+            @$doc->loadHTML(
+                '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>' . $html . '</body></html>',
+                LIBXML_NOERROR | LIBXML_NOWARNING
+            );
+        }
 
         $this->removeElements($doc);
         $this->stripAttributes($doc);
         $this->removeEmptyElements($doc);
 
-        $body = $doc->getElementsByTagName('body')->item(0);
-        if (!$body) {
-            return '';
+        $output = '';
+
+        if ($isFullDocument) {
+            $head = $doc->getElementsByTagName('head')->item(0);
+            if ($head) {
+                $headContent = '';
+                foreach ($head->childNodes as $child) {
+                    $headContent .= $doc->saveHTML($child);
+                }
+                $headContent = preg_replace('/<meta charset="UTF-8">/i', '', $headContent);
+                $headContent = trim($headContent);
+                if ($headContent !== '') {
+                    $output .= '<head>' . $headContent . '</head>' . "\n";
+                }
+            }
         }
 
-        $output = '';
-        foreach ($body->childNodes as $child) {
-            $output .= $doc->saveHTML($child);
+        $body = $doc->getElementsByTagName('body')->item(0);
+        if ($body) {
+            foreach ($body->childNodes as $child) {
+                $output .= $doc->saveHTML($child);
+            }
         }
 
         return $this->normalizeWhitespace(trim($output));

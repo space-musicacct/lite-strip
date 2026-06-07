@@ -65,10 +65,10 @@ class RequestHandler
     {
         $url = $options['url'];
         $format = $options['format'];
-        $followApis = $options['follow_apis'];
-        $extractMain = $options['extract_main'];
+        $followApis = $options['followApis'];
+        $extractMain = $options['extractMain'];
         $timeout = $options['timeout'];
-        $maxApis = $options['max_apis'];
+        $maxApis = $options['maxApis'];
 
         $startTime = hrtime(true);
 
@@ -113,10 +113,12 @@ class RequestHandler
                     continue;
                 }
                 try {
+                    $this->urlValidator->validate($resolvedSrc);
                     $jsCode = $this->htmlFetcher->fetchText($resolvedSrc);
-                    $endpoints = array_merge($endpoints, $this->scriptAnalyzer->extractFromCode($jsCode));
-                } catch (\Throwable) {
-                    // 外部 JS 取得失敗は無視
+                    $found = $this->scriptAnalyzer->extractFromCode($jsCode);
+                    $endpoints = array_merge($endpoints, $found);
+                } catch (\Throwable $e) {
+                    error_log('[LiteStrip] External JS fetch failed: ' . $resolvedSrc . ' — ' . $e->getMessage());
                 }
             }
 

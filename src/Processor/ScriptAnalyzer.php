@@ -85,13 +85,56 @@ class ScriptAnalyzer
             if (preg_match_all($pattern, $jsCode, $matches)) {
                 foreach ($matches[1] as $url) {
                     if (!$this->isExcluded($url)) {
-                        $endpoints[] = $url;
+                        $cleaned = $this->cleanTemplateUrl($url);
+                        if ($cleaned !== '' && $cleaned !== '/') {
+                            $endpoints[] = $cleaned;
+                        }
                     }
                 }
             }
         }
 
         return $endpoints;
+    }
+
+    /**
+     * テンプレートリテラルの ${...} を除去してベース URL を抽出する
+     * 例: `/api/v1/data/?page=${page}&sort=${sort}` → `/api/v1/data/`
+     */
+    private function cleanTemplateUrl(string $url): string
+    {
+        // ${...} を空文字に置換
+        $cleaned = preg_replace('/\$\{[^}]*\}/', '', $url);
+
+        // クエリパラメータの値が空になった部分を整理
+        // `?page=&sort=` → `?` → 不要なクエリを除去
+        $parts = parse_url($cleaned);
+        if (!$parts) {
+            return $cleaned;
+        }
+
+        $result = '';
+        if (isset($parts['scheme'])) {
+            $result .= $parts['scheme'] . '://';
+        }
+        if (isset($parts['host'])) {
+            $result .= $parts['host'];
+        }
+        if (isset($parts['port'])) {
+            $result .= ':' . $parts['port'];
+        }
+        $result .= $parts['path'] ?? '/';
+
+        // 値のあるクエリパラメータだけ残す
+        if (isset($parts['query'])) {
+            parse_str($parts['query'], $queryParams);
+            $validParams = array_filter($queryParams, fn($v) => $v !== '');
+            if (!empty($validParams)) {
+                $result .= '?' . http_build_query($validParams);
+            }
+        }
+
+        return $result;
     }
 
     private function isExcluded(string $url): bool
