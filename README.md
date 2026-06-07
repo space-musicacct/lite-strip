@@ -1,5 +1,7 @@
 # LiteStrip
 
+**[日本語版 README はこちら (README_JP.md)](README_JP.md)**
+
 Lightweight AI-optimized HTML extraction tool powered by PHP and ReactPHP.
 
 LiteStrip takes a URL and returns clean, structured HTML with all styling attributes stripped — optimized for LLM/AI consumption. It also detects `fetch()` API endpoints in JavaScript and automatically follows them to include dynamic data.
