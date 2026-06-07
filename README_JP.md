@@ -163,6 +163,10 @@ services:
       - PORT=3000
 ```
 
+### CORS
+
+全レスポンスに `Access-Control-Allow-Origin: *` を付与しています。任意のドメインのブラウザ JavaScript から直接呼び出せます。
+
 ## 仕組み
 
 ```mermaid

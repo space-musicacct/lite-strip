@@ -169,6 +169,10 @@ services:
       - PORT=3000
 ```
 
+### CORS
+
+All responses include `Access-Control-Allow-Origin: *`. You can call LiteStrip directly from browser JavaScript on any domain.
+
 ## How It Works
 
 ```mermaid
