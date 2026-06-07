@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace LiteStrip\Server;
 
 use DateInvalidTimeZoneException;
+use DateMalformedStringException;
 use DateTimeImmutable;
 use DateTimeZone;
 use LiteStrip\Config\ServerConfig;
@@ -152,6 +153,10 @@ readonly class RequestHandler
         return $this->buildResponse($url, $format, $followApis, $isFull, $maxApis, $timezone, $startTime, $fetchResult);
     }
 
+    /**
+     * @throws DateInvalidTimeZoneException
+     * @throws DateMalformedStringException
+     */
     private function buildResponse(string $url, string $format, bool $followApis, bool $isFull, int $maxApis, ?string $timezone, int $startTime, array $fetchResult): Response
     {
         $html = $fetchResult['html'];
@@ -225,8 +230,8 @@ readonly class RequestHandler
     }
 
     /**
-     * @throws \DateInvalidTimeZoneException
-     * @throws \DateMalformedStringException
+     * @throws DateInvalidTimeZoneException
+     * @throws DateMalformedStringException
      */
     private function buildJsonBody(string $url, string $finalUrl, string $title, string $cleanHtml, array $meta, array $apiResult, ?string $timezone, int $fetchTimeMs, int $processTimeMs, int $totalTimeMs, int $originalSize): string
     {
