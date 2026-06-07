@@ -19,15 +19,15 @@ use LiteStrip\Config\AllowedAttributes;
 class DomProcessor
 {
     /** @var list<string> Elements to remove entirely */
-    private const REMOVE_ELEMENTS = [
+    private const array REMOVE_ELEMENTS = [
         'script', 'style', 'noscript', 'svg',
     ];
 
     /** @var list<string> Link rel values that trigger removal */
-    private const REMOVE_LINK_RELS = ['stylesheet'];
+    private const array REMOVE_LINK_RELS = ['stylesheet'];
 
     /** @var list<string> Void/semantic elements to keep even when empty */
-    private const KEEP_EMPTY = [
+    private const array KEEP_EMPTY = [
         'img', 'br', 'hr', 'input', 'time', 'meta', 'link',
     ];
 

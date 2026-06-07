@@ -14,7 +14,7 @@ namespace LiteStrip\Config;
 final class AllowedAttributes
 {
     /** @var array<string, list<string>> Allowed attributes per tag name */
-    private const TAG_ATTRIBUTES = [
+    private const array TAG_ATTRIBUTES = [
         'a'        => ['href', 'rel'],
         'img'      => ['src', 'alt'],
         'video'    => ['src'],
@@ -35,10 +35,10 @@ final class AllowedAttributes
     ];
 
     /** @var list<string> Attributes allowed on any element */
-    private const GLOBAL_ATTRIBUTES = ['lang', 'dir'];
+    private const array GLOBAL_ATTRIBUTES = ['lang', 'dir'];
 
     /** @var array<string, array<string, string>> Safety transforms: tag => [original => data-prefixed] */
-    private const SAFETY_TRANSFORMS = [
+    private const array SAFETY_TRANSFORMS = [
         'iframe' => ['src' => 'data-src'],
         'form'   => ['action' => 'data-action', 'method' => 'data-method'],
     ];

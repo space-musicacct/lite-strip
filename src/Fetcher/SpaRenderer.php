@@ -31,7 +31,7 @@ class SpaRenderer
     private array $queue = [];
 
     /** @var int Maximum number of queued SPA render requests */
-    private const MAX_QUEUE_SIZE = 10;
+    private const int MAX_QUEUE_SIZE = 10;
 
     public function __construct(
         string $chromiumHost = 'chromium',

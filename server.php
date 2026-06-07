@@ -24,7 +24,7 @@ use React\Socket\SocketServer;
 
 $port = (int) ($argv[1] ?? getenv('PORT') ?: ServerConfig::DEFAULT_PORT);
 
-$dnsResolver = (new React\Dns\Resolver\Factory())->create('8.8.8.8');
+$dnsResolver = new React\Dns\Resolver\Factory()->create('8.8.8.8');
 $browser = new React\Http\Browser();
 
 $urlValidator = new UrlValidator($dnsResolver);

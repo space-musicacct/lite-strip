@@ -16,7 +16,7 @@ use DOMDocument;
 class ScriptAnalyzer
 {
     /** @var list<string> Regex patterns for API endpoint detection */
-    private const PATTERNS = [
+    private const array PATTERNS = [
         '/fetch\s*\(\s*[\'"`]([^\'"`]+)[\'"`]/i',
         '/axios\.get\s*\(\s*[\'"`]([^\'"`]+)[\'"`]/i',
         '/\$\.get\s*\(\s*[\'"`]([^\'"`]+)[\'"`]/i',
@@ -24,7 +24,7 @@ class ScriptAnalyzer
     ];
 
     /** @var list<string> URL path patterns to exclude (tracking, CDN, sourcemaps) */
-    private const EXCLUDED_PATHS = [
+    private const array EXCLUDED_PATHS = [
         '/pixel', '/beacon', '/track', '/analytics',
         '/cdn-cgi/', '.map',
     ];
@@ -156,11 +156,6 @@ class ScriptAnalyzer
     private function isExcluded(string $url): bool
     {
         $lower = strtolower($url);
-        foreach (self::EXCLUDED_PATHS as $path) {
-            if (str_contains($lower, $path)) {
-                return true;
-            }
-        }
-        return false;
+        return array_any(self::EXCLUDED_PATHS, fn($path) => str_contains($lower, $path));
     }
 }
