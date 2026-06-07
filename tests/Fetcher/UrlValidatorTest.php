@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace LiteStrip\Tests\Fetcher;
 
+use Exception;
 use InvalidArgumentException;
 use LiteStrip\Fetcher\UrlValidator;
 use PHPUnit\Framework\TestCase;
 use React\Dns\Resolver\ResolverInterface;
 use React\Promise;
 use RuntimeException;
+use Throwable;
 
 class UrlValidatorTest extends TestCase
 {
@@ -24,7 +26,7 @@ class UrlValidatorTest extends TestCase
                 'private.test' => Promise\resolve('192.168.1.1'),
                 'localhost.test' => Promise\resolve('127.0.0.1'),
                 'metadata.test' => Promise\resolve('169.254.169.254'),
-                default => Promise\reject(new \Exception('DNS failed')),
+                default => Promise\reject(new Exception('DNS failed')),
             };
         });
         $this->validator = new UrlValidator($resolver);
@@ -50,9 +52,11 @@ class UrlValidatorTest extends TestCase
 
     public function testRejectsFtpScheme(): void
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Only http and https');
-        $this->validator->validate('ftp://example.com/file');
+        $this->assertExceptionContains(
+            InvalidArgumentException::class,
+            'Only http and https',
+            fn() => $this->validator->validate('ftp://example.com/file')
+        );
     }
 
     public function testRejectsJavascriptScheme(): void
@@ -69,9 +73,11 @@ class UrlValidatorTest extends TestCase
 
     public function testRejectsUrlWithCredentials(): void
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('credentials');
-        $this->validator->validate('https://user:pass@example.com');
+        $this->assertExceptionContains(
+            InvalidArgumentException::class,
+            'credentials',
+            fn() => $this->validator->validate('https://user:pass@example.com')
+        );
     }
 
     public function testRejectsUrlWithUsernameOnly(): void
@@ -82,16 +88,20 @@ class UrlValidatorTest extends TestCase
 
     public function testRejectsTooLongUrl(): void
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('maximum length');
-        $this->validator->validate('https://example.com/' . str_repeat('a', 2048));
+        $this->assertExceptionContains(
+            InvalidArgumentException::class,
+            'maximum length',
+            fn() => $this->validator->validate('https://example.com/' . str_repeat('a', 2048))
+        );
     }
 
     public function testBlocksPrivateIpDirectly(): void
     {
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('private network');
-        $this->validator->validate('http://192.168.1.1/admin');
+        $this->assertExceptionContains(
+            RuntimeException::class,
+            'private network',
+            fn() => $this->validator->validate('http://192.168.1.1/admin')
+        );
     }
 
     public function testBlocksLocalhostDirectly(): void
@@ -108,9 +118,11 @@ class UrlValidatorTest extends TestCase
 
     public function testBlocksDnsResolvingToPrivateIp(): void
     {
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('private network');
-        $this->validator->validate('https://private.test/page');
+        $this->assertExceptionContains(
+            RuntimeException::class,
+            'private network',
+            fn() => $this->validator->validate('https://private.test/page')
+        );
     }
 
     public function testBlocksDnsResolvingToLocalhost(): void
@@ -127,9 +139,11 @@ class UrlValidatorTest extends TestCase
 
     public function testBlocksDnsFailure(): void
     {
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('DNS resolution failed');
-        $this->validator->validate('https://nonexistent.invalid/page');
+        $this->assertExceptionContains(
+            RuntimeException::class,
+            'DNS resolution failed',
+            fn() => $this->validator->validate('https://nonexistent.invalid/page')
+        );
     }
 
     // --- isSameOrigin ---
@@ -210,5 +224,23 @@ class UrlValidatorTest extends TestCase
             'https://cdn.example.com/lib.js',
             $this->validator->resolveUrl('https://example.com/page', '//cdn.example.com/lib.js')
         );
+    }
+
+    /**
+     * Asserts that a callable throws the expected exception class with a message containing the given substring.
+     *
+     * @param class-string<Throwable> $exceptionClass
+     * @param string $messageSubstring
+     * @param callable $callable
+     */
+    private function assertExceptionContains(string $exceptionClass, string $messageSubstring, callable $callable): void
+    {
+        try {
+            $callable();
+            $this->fail("Expected $exceptionClass was not thrown");
+        } catch (Throwable $e) {
+            $this->assertInstanceOf($exceptionClass, $e);
+            $this->assertStringContainsString($messageSubstring, $e->getMessage());
+        }
     }
 }
