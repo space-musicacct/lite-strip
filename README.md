@@ -44,12 +44,14 @@ curl "http://localhost:8080/?url=https://example.com&is_spa=true"
 ### JavaScript (fetch)
 
 ```javascript
-const response = await fetch(
-  "http://localhost:8080/?url=https://example.com&timezone=UTC"
-);
-const data = await response.json();
-console.log(data.data.title);       // "Example Domain"
-console.log(data.data.contentHtml); // "<h1>Example Domain</h1>..."
+const strip = async (url) => {
+  const res = await fetch(`http://localhost:8080/?url=${encodeURIComponent(url)}&timezone=UTC`);
+  return await res.json();
+};
+
+const data = await strip("https://example.com");
+console.log(data.data.title);        // "Example Domain"
+console.log(data.data.contentHtml);  // "<h1>Example Domain</h1>..."
 console.log(data.data.detectedApis); // [...]
 ```
 
