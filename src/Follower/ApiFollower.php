@@ -1,0 +1,130 @@
+<?php
+
+declare(strict_types=1);
+
+namespace LiteStrip\Follower;
+
+use LiteStrip\Config\ServerConfig;
+use LiteStrip\Fetcher\HtmlFetcher;
+use LiteStrip\Fetcher\UrlValidator;
+use React\Promise;
+
+use function React\Async\await;
+
+class ApiFollower
+{
+    public function __construct(
+        private readonly HtmlFetcher $fetcher,
+        private readonly UrlValidator $urlValidator,
+    ) {}
+
+    /**
+     * @param string       $baseUrl       元ページの URL
+     * @param list<string> $rawEndpoints  ScriptAnalyzer が検出した未解決 URL
+     * @param int          $maxApis       追従する最大数
+     * @return array{apiData: list<array>, failedApis: list<array>, detectedApis: list<string>}
+     */
+    public function follow(string $baseUrl, array $rawEndpoints, int $maxApis = ServerConfig::DEFAULT_MAX_APIS): array
+    {
+        $detectedApis = [];
+        $validEndpoints = [];
+
+        foreach ($rawEndpoints as $raw) {
+            $resolved = $this->urlValidator->resolveUrl($baseUrl, $raw);
+            $detectedApis[] = $resolved;
+
+            if (!$this->urlValidator->isSameOrigin($baseUrl, $resolved)) {
+                continue;
+            }
+
+            try {
+                $this->urlValidator->validate($resolved);
+                $validEndpoints[] = $resolved;
+            } catch (\Throwable) {
+                // SSRF blocked — skip
+            }
+
+            if (count($validEndpoints) >= $maxApis) {
+                break;
+            }
+        }
+
+        if (empty($validEndpoints)) {
+            return [
+                'apiData' => [],
+                'failedApis' => [],
+                'detectedApis' => $detectedApis,
+            ];
+        }
+
+        $apiData = [];
+        $failedApis = [];
+
+        $promises = [];
+        foreach ($validEndpoints as $url) {
+            $promises[$url] = $this->fetchEndpoint($url);
+        }
+
+        $results = await(Promise\all(
+            array_map(
+                fn($promise) => $promise->then(
+                    fn($result) => $result,
+                    fn(\Throwable $e) => ['error' => $e->getMessage()]
+                ),
+                $promises
+            )
+        ));
+
+        foreach ($results as $url => $result) {
+            if (isset($result['error'])) {
+                $failedApis[] = [
+                    'url' => $url,
+                    'error' => $this->classifyError($result['error']),
+                ];
+            } else {
+                $apiData[] = $result;
+            }
+        }
+
+        return [
+            'apiData' => $apiData,
+            'failedApis' => $failedApis,
+            'detectedApis' => $detectedApis,
+        ];
+    }
+
+    /**
+     * @return \React\Promise\PromiseInterface<array>
+     */
+    private function fetchEndpoint(string $url): Promise\PromiseInterface
+    {
+        return \React\Async\async(function () use ($url) {
+            $body = $this->fetcher->fetchText($url);
+
+            $data = json_decode($body, true);
+            $isJson = json_last_error() === JSON_ERROR_NONE;
+
+            return [
+                'url' => $url,
+                'status' => 200,
+                'contentType' => $isJson ? 'application/json' : 'text/plain',
+                'data' => $isJson ? $data : $body,
+            ];
+        })();
+    }
+
+    private function classifyError(string $message): string
+    {
+        $lower = strtolower($message);
+        if (str_contains($lower, 'timeout') || str_contains($lower, 'timed out')) {
+            return 'TIMEOUT';
+        }
+        if (str_contains($lower, 'private network') || str_contains($lower, 'blocked')) {
+            return 'BLOCKED_URL';
+        }
+        if (str_contains($lower, 'maximum size') || str_contains($lower, 'too large')) {
+            return 'RESPONSE_TOO_LARGE';
+        }
+        return 'FETCH_FAILED';
+    }
+}

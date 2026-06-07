@@ -1,0 +1,23 @@
+{
+    "name": "space-musicacct/lite-strip",
+    "description": "Lightweight AI-optimized HTML extraction tool powered by ReactPHP",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.2",
+        "react/http": "^1.10",
+        "react/async": "^4.3",
+        "react/promise": "^3.2",
+        "react/dns": "^1.13",
+        "react/socket": "^1.16",
+        "league/html-to-markdown": "^5.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "LiteStrip\\": "src/"
+        }
+    },
+    "scripts": {
+        "start": "php server.php"
+    }
+}
