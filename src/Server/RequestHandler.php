@@ -22,6 +22,13 @@ use React\Promise\PromiseInterface;
 use RuntimeException;
 use Throwable;
 
+/**
+ * Main HTTP request handler for LiteStrip.
+ *
+ * Routes incoming requests to the appropriate processing pipeline:
+ * URL validation → HTML fetch (or SPA render) → script analysis →
+ * API following → content extraction → DOM processing → output formatting.
+ */
 readonly class RequestHandler
 {
     public function __construct(
@@ -37,6 +44,12 @@ readonly class RequestHandler
         private MarkdownFormatter $markdownFormatter,
     ) {}
 
+    /**
+     * Handles an incoming HTTP request and returns a response or a promise.
+     *
+     * Returns a PromiseInterface for SPA requests (async rendering via child process).
+     * Returns a Response directly for all other request types.
+     */
     public function handle(ServerRequestInterface $request): Response|PromiseInterface
     {
         $method = $request->getMethod();

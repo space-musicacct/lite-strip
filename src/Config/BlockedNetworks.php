@@ -4,26 +4,35 @@ declare(strict_types=1);
 
 namespace LiteStrip\Config;
 
+/**
+ * SSRF protection: determines whether an IP address belongs to a private or reserved network.
+ *
+ * Blocks RFC 1918 private ranges, loopback, link-local (including cloud metadata endpoints),
+ * shared address space (RFC 6598), documentation ranges, and benchmarking ranges.
+ */
 final class BlockedNetworks
 {
-    /** @var list<string> CIDR notation */
+    /** @var list<string> Blocked IPv4 CIDR ranges */
     private const IPV4_BLOCKED = [
-        '0.0.0.0/8',        // Current network
-        '10.0.0.0/8',       // RFC 1918 Private
-        '100.64.0.0/10',    // RFC 6598 Shared Address Space
-        '127.0.0.0/8',      // Loopback
-        '169.254.0.0/16',   // Link-local (cloud metadata 169.254.169.254)
-        '172.16.0.0/12',    // RFC 1918 Private (Docker bridge)
-        '192.0.0.0/24',     // IETF Protocol Assignments
-        '192.0.2.0/24',     // TEST-NET-1
-        '192.168.0.0/16',   // RFC 1918 Private
-        '198.18.0.0/15',    // Benchmarking
-        '198.51.100.0/24',  // TEST-NET-2
-        '203.0.113.0/24',   // TEST-NET-3
+        '0.0.0.0/8',
+        '10.0.0.0/8',
+        '100.64.0.0/10',
+        '127.0.0.0/8',
+        '169.254.0.0/16',
+        '172.16.0.0/12',
+        '192.0.0.0/24',
+        '192.0.2.0/24',
+        '192.168.0.0/16',
+        '198.18.0.0/15',
+        '198.51.100.0/24',
+        '203.0.113.0/24',
     ];
 
     /**
-     * @return bool IP がブロック対象であれば true
+     * Checks whether the given IP address is in a blocked network.
+     *
+     * @param string $ip IPv4 or IPv6 address
+     * @return bool True if the IP is blocked, false if safe to connect
      */
     public static function isBlocked(string $ip): bool
     {
@@ -36,6 +45,9 @@ final class BlockedNetworks
         return true;
     }
 
+    /**
+     * Checks an IPv4 address against the CIDR blocklist.
+     */
     private static function matchesIpv4CidrList(string $ip): bool
     {
         $packed = @inet_pton($ip);
@@ -60,6 +72,10 @@ final class BlockedNetworks
         return false;
     }
 
+    /**
+     * Checks an IPv6 address against known blocked prefixes.
+     * Blocks ::1 (loopback), fc00::/7 (ULA), and fe80::/10 (link-local).
+     */
     private static function isBlockedIpv6(string $ip): bool
     {
         $packed = @inet_pton($ip);
@@ -69,18 +85,15 @@ final class BlockedNetworks
 
         $hex = bin2hex($packed);
 
-        // ::1/128
         if ($hex === '00000000000000000000000000000001') {
             return true;
         }
 
-        // fc00::/7
         $firstByte = hexdec(substr($hex, 0, 2));
         if (($firstByte & 0xFE) === 0xFC) {
             return true;
         }
 
-        // fe80::/10
         $firstTwoBytes = hexdec(substr($hex, 0, 4));
         if (($firstTwoBytes & 0xFFC0) === 0xFE80) {
             return true;

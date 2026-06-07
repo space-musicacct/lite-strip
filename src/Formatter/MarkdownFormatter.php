@@ -6,6 +6,9 @@ namespace LiteStrip\Formatter;
 
 use League\HTMLToMarkdown\HtmlConverter;
 
+/**
+ * Formats extraction results as Markdown using league/html-to-markdown.
+ */
 class MarkdownFormatter
 {
     private HtmlConverter $converter;
@@ -20,9 +23,11 @@ class MarkdownFormatter
     }
 
     /**
-     * @param string      $contentHtml 属性剥がし済み HTML
-     * @param list<array> $apiData     追従成功した API データ
-     * @return string Markdown 文字列
+     * Converts attribute-stripped HTML to Markdown, appending API data as code blocks.
+     *
+     * @param string $contentHtml Attribute-stripped HTML content
+     * @param list<array> $apiData Successfully fetched API responses
+     * @return string Markdown output
      */
     public function format(string $contentHtml, array $apiData = []): string
     {

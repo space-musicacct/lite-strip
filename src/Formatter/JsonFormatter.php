@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace LiteStrip\Formatter;
 
+/**
+ * Formats extraction results as structured JSON.
+ */
 class JsonFormatter
 {
     /**
@@ -20,7 +23,7 @@ class JsonFormatter
      *     warnings: list<string>,
      *     stats: array
      * } $data
-     * @return string JSON 文字列
+     * @return string JSON-encoded success response
      */
     public function format(array $data): string
     {
@@ -44,6 +47,13 @@ class JsonFormatter
         return json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
     }
 
+    /**
+     * Builds a JSON-encoded error response.
+     *
+     * @param string $code Error code (e.g. BLOCKED_URL, TIMEOUT)
+     * @param string $message Human-readable error description
+     * @return string JSON-encoded error response
+     */
     public function formatError(string $code, string $message): string
     {
         return json_encode([

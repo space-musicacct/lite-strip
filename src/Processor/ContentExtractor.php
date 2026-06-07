@@ -6,12 +6,20 @@ namespace LiteStrip\Processor;
 
 use DOMDocument;
 
+/**
+ * Extracts the relevant portion of an HTML document for AI consumption.
+ *
+ * By default returns the <body> content (header, main, footer included).
+ * With $more=true, includes <head> metadata as well.
+ */
 class ContentExtractor
 {
     /**
-     * @param string $html  完全な HTML 文字列
-     * @param bool   $more  true なら <head> も含めて返す、false なら <body> の中身のみ
-     * @return string 抽出済み HTML
+     * Extracts content from an HTML document.
+     *
+     * @param string $html Full HTML document string
+     * @param bool $more If true, return the entire document including <head>; if false, return <body> only
+     * @return string Extracted HTML
      */
     public function extract(string $html, bool $more = false): string
     {

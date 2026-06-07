@@ -4,14 +4,19 @@ declare(strict_types=1);
 
 namespace LiteStrip\Formatter;
 
+/**
+ * Formats extraction results as clean structural HTML.
+ */
 class HtmlFormatter
 {
     /**
-     * @param string      $url        元 URL
-     * @param string      $contentHtml 属性剥がし済み HTML
-     * @param list<array> $apiData    追従成功した API データ
-     * @param list<array> $failedApis 追従失敗した API データ
-     * @return string 出力 HTML
+     * Builds the final HTML output with source URL, content, API data, and failed APIs.
+     *
+     * @param string $url Source URL
+     * @param string $contentHtml Attribute-stripped HTML content
+     * @param list<array> $apiData Successfully fetched API responses
+     * @param list<array> $failedApis Failed API fetch attempts with error details
+     * @return string Formatted HTML output
      */
     public function format(string $url, string $contentHtml, array $apiData = [], array $failedApis = []): string
     {

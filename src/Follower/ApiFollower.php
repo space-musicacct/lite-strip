@@ -9,6 +9,13 @@ use LiteStrip\Fetcher\HtmlFetcher;
 use LiteStrip\Fetcher\UrlValidator;
 use Throwable;
 
+/**
+ * Follows API endpoints discovered by ScriptAnalyzer.
+ *
+ * Resolves relative URLs, enforces same-origin policy, validates each endpoint
+ * against SSRF blocklist, and fetches their responses. Results are split into
+ * successful (apiData) and failed (failedApis) arrays.
+ */
 readonly class ApiFollower
 {
     public function __construct(
@@ -17,9 +24,11 @@ readonly class ApiFollower
     ) {}
 
     /**
-     * @param string       $baseUrl       元ページの URL
-     * @param list<string> $rawEndpoints  ScriptAnalyzer が検出した未解決 URL
-     * @param int          $maxApis       追従する最大数
+     * Resolves, validates, and fetches discovered API endpoints.
+     *
+     * @param string $baseUrl Base page URL for relative URL resolution and same-origin check
+     * @param list<string> $rawEndpoints Raw endpoint URLs from ScriptAnalyzer (may be relative)
+     * @param int $maxApis Maximum number of endpoints to follow
      * @return array{apiData: list<array>, failedApis: list<array>, detectedApis: list<string>}
      */
     public function follow(string $baseUrl, array $rawEndpoints, int $maxApis = ServerConfig::DEFAULT_MAX_APIS): array
@@ -106,6 +115,9 @@ readonly class ApiFollower
         ];
     }
 
+    /**
+     * Classifies an exception message into a standardized error code.
+     */
     private function classifyError(string $message): string
     {
         $lower = strtolower($message);

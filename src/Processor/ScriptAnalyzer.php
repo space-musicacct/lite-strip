@@ -6,9 +6,16 @@ namespace LiteStrip\Processor;
 
 use DOMDocument;
 
+/**
+ * Detects API endpoint URLs in JavaScript code using regex pattern matching.
+ *
+ * Scans inline <script> tags and same-origin external JS files for
+ * fetch(), axios.get(), $.get(), and $.getJSON() calls. Handles template
+ * literal interpolation (${...}) by stripping variables to extract base URLs.
+ */
 class ScriptAnalyzer
 {
-    /** @var list<string> fetch() / axios.get() 等の検出パターン */
+    /** @var list<string> Regex patterns for API endpoint detection */
     private const PATTERNS = [
         '/fetch\s*\(\s*[\'"`]([^\'"`]+)[\'"`]/i',
         '/axios\.get\s*\(\s*[\'"`]([^\'"`]+)[\'"`]/i',
@@ -16,15 +23,17 @@ class ScriptAnalyzer
         '/\$\.getJSON\s*\(\s*[\'"`]([^\'"`]+)[\'"`]/i',
     ];
 
-    /** @var list<string> 除外するパスパターン */
+    /** @var list<string> URL path patterns to exclude (tracking, CDN, sourcemaps) */
     private const EXCLUDED_PATHS = [
         '/pixel', '/beacon', '/track', '/analytics',
         '/cdn-cgi/', '.map',
     ];
 
     /**
-     * @param string $html   HTML 文字列
-     * @return list<string>  検出された script src URL (same-origin 外部 JS)
+     * Extracts external script src URLs from HTML for further analysis.
+     *
+     * @param string $html HTML document string
+     * @return list<string> Script src attribute values
      */
     public function extractScriptSources(string $html): array
     {
@@ -48,8 +57,10 @@ class ScriptAnalyzer
     }
 
     /**
-     * @param string $html   HTML 文字列 (inline script 含む)
-     * @return list<string>  検出された API endpoint URL (未解決、重複除去済み)
+     * Extracts API endpoint URLs from inline <script> tags in HTML.
+     *
+     * @param string $html HTML document string containing inline scripts
+     * @return list<string> Detected API endpoint URLs (unresolved, deduplicated)
      */
     public function extractFromHtml(string $html): array
     {
@@ -76,8 +87,10 @@ class ScriptAnalyzer
     }
 
     /**
-     * @param string $jsCode  JavaScript ソースコード
-     * @return list<string>   検出された API endpoint URL
+     * Extracts API endpoint URLs from raw JavaScript source code.
+     *
+     * @param string $jsCode JavaScript source code
+     * @return list<string> Detected API endpoint URLs
      */
     public function extractFromCode(string $jsCode): array
     {
@@ -100,8 +113,9 @@ class ScriptAnalyzer
     }
 
     /**
-     * テンプレートリテラルの ${...} を除去してベース URL を抽出する
-     * 例: `/api/v1/data/?page=${page}&sort=${sort}` → `/api/v1/data/`
+     * Strips template literal interpolations (${...}) and extracts the base URL.
+     *
+     * Example: `/api/v1/data/?page=${page}&sort=${sort}` becomes `/api/v1/data/`
      */
     private function cleanTemplateUrl(string $url): string
     {

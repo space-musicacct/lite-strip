@@ -5,13 +5,19 @@ declare(strict_types=1);
 namespace LiteStrip\Fetcher;
 
 use LiteStrip\Config\ServerConfig;
-use React\Http\Browser;
 use Psr\Http\Message\ResponseInterface;
-
+use React\Http\Browser;
 use RuntimeException;
 use Throwable;
+
 use function React\Async\await;
 
+/**
+ * Fetches HTML content from URLs using ReactPHP's non-blocking HTTP client.
+ *
+ * Handles redirects manually to allow per-hop SSRF validation,
+ * and enforces response size limits.
+ */
 class HtmlFetcher
 {
     private Browser $browser;
@@ -26,10 +32,13 @@ class HtmlFetcher
     }
 
     /**
-     * @param string $url     取得対象 URL
-     * @param int    $timeout タイムアウト秒数
+     * Fetches an HTML page, following redirects manually up to the configured limit.
+     *
+     * @param string $url Target URL to fetch
+     * @param int $timeout Per-request timeout in seconds
      * @return array{html: string, finalUrl: string, status: int, contentType: string}
-     * @throws RuntimeException|Throwable 取得失敗時
+     * @throws RuntimeException If fetch fails, too many redirects, or response too large
+     * @throws Throwable On unexpected HTTP client errors
      */
     public function fetch(string $url, int $timeout = ServerConfig::DEFAULT_TIMEOUT): array
     {
@@ -63,21 +72,22 @@ class HtmlFetcher
                 throw new RuntimeException('Response exceeds maximum size of ' . ServerConfig::MAX_HTML_SIZE . ' bytes');
             }
 
-            $contentType = $response->getHeaderLine('Content-Type');
-
             return [
                 'html' => $body,
                 'finalUrl' => $finalUrl,
                 'status' => $status,
-                'contentType' => $contentType,
+                'contentType' => $response->getHeaderLine('Content-Type'),
             ];
         }
     }
 
     /**
-     * @param string $url 取得対象 URL
-     * @return string レスポンスボディ
-     * @throws Throwable
+     * Fetches a URL and returns the response body as a string.
+     *
+     * @param string $url Target URL
+     * @param int $timeout Timeout in seconds
+     * @return string Response body
+     * @throws Throwable On fetch failure or size limit exceeded
      */
     public function fetchText(string $url, int $timeout = ServerConfig::API_ENDPOINT_TIMEOUT): string
     {
@@ -85,8 +95,12 @@ class HtmlFetcher
     }
 
     /**
+     * Fetches a URL and returns the response with status code and headers.
+     *
+     * @param string $url Target URL
+     * @param int $timeout Timeout in seconds
      * @return array{body: string, status: int, reasonPhrase: string, contentType: string}
-     * @throws Throwable
+     * @throws Throwable On fetch failure or size limit exceeded
      */
     public function fetchWithStatus(string $url, int $timeout = ServerConfig::API_ENDPOINT_TIMEOUT): array
     {
@@ -108,6 +122,9 @@ class HtmlFetcher
         ];
     }
 
+    /**
+     * Resolves a redirect Location header against the current URL.
+     */
     private function resolveRedirect(string $baseUrl, string $location): string
     {
         if (preg_match('#^https?://#i', $location)) {

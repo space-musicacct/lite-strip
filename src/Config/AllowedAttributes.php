@@ -4,9 +4,16 @@ declare(strict_types=1);
 
 namespace LiteStrip\Config;
 
+/**
+ * Defines which HTML attributes to preserve during DOM processing.
+ *
+ * All attributes not listed here are stripped. Safety transforms convert
+ * potentially dangerous attributes (e.g. iframe src) to data-* equivalents
+ * so AI can read them without triggering browser behavior.
+ */
 final class AllowedAttributes
 {
-    /** @var array<string, list<string>> tag => allowed attributes */
+    /** @var array<string, list<string>> Allowed attributes per tag name */
     private const TAG_ATTRIBUTES = [
         'a'        => ['href', 'rel'],
         'img'      => ['src', 'alt'],
@@ -27,17 +34,20 @@ final class AllowedAttributes
         'link'     => ['rel', 'href'],
     ];
 
-    /** @var list<string> attributes allowed on any element */
+    /** @var list<string> Attributes allowed on any element */
     private const GLOBAL_ATTRIBUTES = ['lang', 'dir'];
 
-    /** @var array<string, array<string, string>> tag => [original => data-prefixed] */
+    /** @var array<string, array<string, string>> Safety transforms: tag => [original => data-prefixed] */
     private const SAFETY_TRANSFORMS = [
         'iframe' => ['src' => 'data-src'],
         'form'   => ['action' => 'data-action', 'method' => 'data-method'],
     ];
 
     /**
-     * @return list<string> tag で許可される属性名リスト
+     * Returns the list of allowed attribute names for the given tag.
+     *
+     * @param string $tag Lowercase tag name
+     * @return list<string> Allowed attribute names (tag-specific + global)
      */
     public static function forTag(string $tag): array
     {
@@ -48,11 +58,13 @@ final class AllowedAttributes
     }
 
     /**
-     * @return array<string, string> 安全化変換マップ (original => data-prefixed)
+     * Returns safety transform mappings for the given tag.
+     *
+     * @param string $tag Lowercase tag name
+     * @return array<string, string> Map of original attribute name => data-prefixed name
      */
     public static function safetyTransforms(string $tag): array
     {
         return self::SAFETY_TRANSFORMS[$tag] ?? [];
     }
-
 }

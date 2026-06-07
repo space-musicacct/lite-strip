@@ -9,8 +9,16 @@ use React\Promise\Deferred;
 use React\Promise\PromiseInterface;
 use RuntimeException;
 use Throwable;
+
 use function React\Promise\reject;
 
+/**
+ * Renders JavaScript-heavy pages (SPAs) via a headless Chromium child process.
+ *
+ * Requests are queued and processed one at a time to avoid Fiber conflicts
+ * between chrome-php's blocking I/O and ReactPHP's event loop. The actual
+ * rendering is done in a separate PHP process (spa-worker.php) using proc_open.
+ */
 class SpaRenderer
 {
     private string $chromiumHost;
@@ -18,9 +26,11 @@ class SpaRenderer
     private string $workerScript;
 
     private bool $processing = false;
+
     /** @var list<array{url: string, timeout: int, deferred: Deferred}> */
     private array $queue = [];
 
+    /** @var int Maximum number of queued SPA render requests */
     private const MAX_QUEUE_SIZE = 10;
 
     public function __construct(
@@ -33,6 +43,10 @@ class SpaRenderer
     }
 
     /**
+     * Queues a URL for SPA rendering and returns a promise that resolves with the rendered HTML.
+     *
+     * @param string $url Target URL to render
+     * @param int $timeout Rendering timeout in seconds
      * @return PromiseInterface<array{html: string, finalUrl: string, status: int}>
      */
     public function renderAsync(string $url, int $timeout = 15): PromiseInterface
@@ -53,6 +67,9 @@ class SpaRenderer
         return $deferred->promise();
     }
 
+    /**
+     * Processes the next item in the queue. Only one render runs at a time.
+     */
     private function processNext(): void
     {
         if ($this->processing || empty($this->queue)) {
@@ -77,7 +94,15 @@ class SpaRenderer
     }
 
     /**
+     * Spawns a child PHP process to perform the actual Chromium rendering.
+     *
+     * Uses proc_open for synchronous execution to keep chrome-php's blocking I/O
+     * completely isolated from the ReactPHP event loop.
+     *
+     * @param string $url Target URL
+     * @param int $timeout Timeout in seconds
      * @return array{html: string, finalUrl: string, status: int}
+     * @throws RuntimeException If the worker process fails
      */
     private function execWorker(string $url, int $timeout): array
     {

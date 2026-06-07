@@ -1,9 +1,11 @@
 <?php
 
 /**
- * SPA レンダリングワーカー (子プロセスとして実行)
- * stdin から JSON {url, timeout, chromiumHost, chromiumPort} を受け取り、
- * レンダリング済み HTML を JSON で stdout に返す
+ * SPA rendering worker — executed as a child process by SpaRenderer.
+ *
+ * Reads JSON input from stdin: {url, timeout, chromiumHost, chromiumPort}
+ * Connects to Chromium via CDP, renders the page, and writes the rendered
+ * HTML as JSON to stdout: {ok: true, html: "...", finalUrl: "..."}
  */
 
 declare(strict_types=1);

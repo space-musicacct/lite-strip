@@ -9,24 +9,33 @@ use DOMElement;
 use DOMXPath;
 use LiteStrip\Config\AllowedAttributes;
 
+/**
+ * Processes HTML by stripping non-semantic attributes, removing noise elements,
+ * and cleaning up empty containers.
+ *
+ * Detects whether the input is a full HTML document (with <body>) or a fragment,
+ * and handles each case appropriately to preserve the document structure.
+ */
 class DomProcessor
 {
-    /** @var list<string> 完全に削除する要素 */
+    /** @var list<string> Elements to remove entirely */
     private const REMOVE_ELEMENTS = [
         'script', 'style', 'noscript', 'svg',
     ];
 
-    /** @var list<string> rel="stylesheet" で削除する link */
+    /** @var list<string> Link rel values that trigger removal */
     private const REMOVE_LINK_RELS = ['stylesheet'];
 
-    /** @var list<string> 空でも削除しない void 要素 */
+    /** @var list<string> Void/semantic elements to keep even when empty */
     private const KEEP_EMPTY = [
         'img', 'br', 'hr', 'input', 'time', 'meta', 'link',
     ];
 
     /**
-     * @param string $html 処理対象の HTML
-     * @return string 属性剥がし済みのクリーンな HTML
+     * Strips attributes, removes noise elements, and normalizes whitespace.
+     *
+     * @param string $html Input HTML (full document or fragment)
+     * @return string Cleaned HTML with only semantic attributes preserved
      */
     public function process(string $html): string
     {

@@ -10,10 +10,16 @@ use LiteStrip\Config\BlockedNetworks;
 use LiteStrip\Config\ServerConfig;
 use React\Dns\Resolver\ResolverInterface;
 use RuntimeException;
-
 use Throwable;
+
 use function React\Async\await;
 
+/**
+ * Validates URLs for safety before fetching.
+ *
+ * Checks scheme, format, credentials, and performs DNS-based SSRF protection
+ * by resolving hostnames and checking resolved IPs against the blocklist.
+ */
 readonly class UrlValidator
 {
     public function __construct(
@@ -21,8 +27,12 @@ readonly class UrlValidator
     ) {}
 
     /**
-     * @throws InvalidArgumentException URL が不正な場合
-     * @throws RuntimeException|Throwable         SSRF ブロック時
+     * Validates a URL for scheme, format, length, credentials, and SSRF safety.
+     *
+     * @param string $url Absolute URL to validate
+     * @throws InvalidArgumentException If the URL is malformed or uses an unsupported scheme
+     * @throws RuntimeException If the URL resolves to a blocked network
+     * @throws Throwable On unexpected DNS resolution failures
      */
     public function validate(string $url): void
     {
@@ -48,7 +58,11 @@ readonly class UrlValidator
     }
 
     /**
-     * @throws RuntimeException|Throwable SSRF ブロック時
+     * Validates a hostname by resolving it and checking the IP against the blocklist.
+     *
+     * @param string $host Hostname or IP address
+     * @throws RuntimeException If the host resolves to a blocked network
+     * @throws Throwable On DNS resolution failure
      */
     public function validateHost(string $host): void
     {
@@ -76,7 +90,11 @@ readonly class UrlValidator
     }
 
     /**
-     * @return bool same-origin 判定
+     * Checks whether two URLs share the same origin (scheme + host + port).
+     *
+     * @param string $baseUrl The base URL to compare against
+     * @param string $targetUrl The target URL to check
+     * @return bool True if both URLs have the same origin
      */
     public function isSameOrigin(string $baseUrl, string $targetUrl): bool
     {
@@ -100,7 +118,11 @@ readonly class UrlValidator
     }
 
     /**
-     * @return string 相対 URL を絶対 URL に解決
+     * Resolves a relative URL against a base URL.
+     *
+     * @param string $baseUrl The base URL for resolution
+     * @param string $relativeUrl The URL to resolve (may be absolute, protocol-relative, or relative)
+     * @return string The resolved absolute URL
      */
     public function resolveUrl(string $baseUrl, string $relativeUrl): string
     {
