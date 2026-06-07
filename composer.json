@@ -27,5 +27,8 @@
     },
     "scripts": {
         "start": "php server.php"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^13.2"
     }
 }
