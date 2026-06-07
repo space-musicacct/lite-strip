@@ -7,9 +7,24 @@ services:
       - "8080:8080"
     environment:
       - TZ=Asia/Tokyo
+      - CHROMIUM_HOST=chromium
+      - CHROMIUM_PORT=9222
+    depends_on:
+      chromium:
+        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 30s
+
+  chromium:
+    image: zenika/alpine-chrome:latest
+    container_name: lite-strip-chromium
+    restart: on-failure:5
+    command: ["chromium-browser", "--headless", "--no-sandbox", "--disable-gpu", "--remote-debugging-address=0.0.0.0", "--remote-debugging-port=9222", "--remote-allow-origins=*"]
+    expose:
+      - "9222"
+    environment:
+      - TZ=Asia/Tokyo

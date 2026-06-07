@@ -6,6 +6,7 @@ namespace LiteStrip\Server;
 
 use LiteStrip\Config\ServerConfig;
 use LiteStrip\Fetcher\HtmlFetcher;
+use LiteStrip\Fetcher\SpaRenderer;
 use LiteStrip\Fetcher\UrlValidator;
 use LiteStrip\Follower\ApiFollower;
 use LiteStrip\Formatter\HtmlFormatter;
@@ -22,6 +23,7 @@ class RequestHandler
     public function __construct(
         private readonly UrlValidator $urlValidator,
         private readonly HtmlFetcher $htmlFetcher,
+        private readonly ?SpaRenderer $spaRenderer,
         private readonly ScriptAnalyzer $scriptAnalyzer,
         private readonly ApiFollower $apiFollower,
         private readonly ContentExtractor $contentExtractor,
@@ -66,7 +68,8 @@ class RequestHandler
         $url = $options['url'];
         $format = $options['format'];
         $followApis = $options['followApis'];
-        $extractMain = $options['extractMain'];
+        $isFull = $options['isFull'];
+        $isSpa = $options['isSpa'];
         $timeout = $options['timeout'];
         $maxApis = $options['maxApis'];
 
@@ -83,7 +86,12 @@ class RequestHandler
 
         // 2. HTML 取得
         try {
-            $fetchResult = $this->htmlFetcher->fetch($url, $timeout);
+            if ($isSpa && $this->spaRenderer) {
+                $fetchResult = $this->spaRenderer->render($url, $timeout);
+                $fetchResult['contentType'] = 'text/html';
+            } else {
+                $fetchResult = $this->htmlFetcher->fetch($url, $timeout);
+            }
         } catch (\RuntimeException $e) {
             $msg = $e->getMessage();
             if (str_contains(strtolower($msg), 'timeout') || str_contains(strtolower($msg), 'timed out')) {
@@ -130,7 +138,7 @@ class RequestHandler
         }
 
         // 4. コンテンツ抽出
-        $processedHtml = $this->contentExtractor->extract($html, !$extractMain);
+        $processedHtml = $this->contentExtractor->extract($html, $isFull);
 
         // 5. DOM 処理 (属性剥がし)
         $cleanHtml = $this->domProcessor->process($processedHtml);
@@ -204,7 +212,7 @@ class RequestHandler
     }
 
     /**
-     * @return array{url: string, format: string, followApis: bool, extractMain: bool, timeout: int, maxApis: int}
+     * @return array{url: string, format: string, followApis: bool, isFull: bool, isSpa: bool, timeout: int, maxApis: int}
      */
     private function parseOptions(ServerRequestInterface $request): array
     {
@@ -235,7 +243,8 @@ class RequestHandler
         }
 
         $followApis = filter_var($params['follow_apis'] ?? true, FILTER_VALIDATE_BOOLEAN);
-        $extractMain = !filter_var($params['more'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $isFull = filter_var($params['is_full'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $isSpa = filter_var($params['is_spa'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         $timeout = (int) ($params['timeout'] ?? ServerConfig::DEFAULT_TIMEOUT);
         if ($timeout < 1 || $timeout > ServerConfig::MAX_TIMEOUT) {
@@ -247,7 +256,7 @@ class RequestHandler
             throw new \InvalidArgumentException('max_apis must be between 1 and ' . ServerConfig::MAX_MAX_APIS);
         }
 
-        return compact('url', 'format', 'followApis', 'extractMain', 'timeout', 'maxApis');
+        return compact('url', 'format', 'followApis', 'isFull', 'isSpa', 'timeout', 'maxApis');
     }
 
     private function health(): Response
@@ -275,7 +284,8 @@ GET /?url=https://example.com&amp;format=markdown</pre>
 <li><code>url</code> (required) — Target URL</li>
 <li><code>format</code> — html (default), json, markdown</li>
 <li><code>follow_apis</code> — true (default), false</li>
-<li><code>more</code> — false (default), true (include head/header/footer)</li>
+<li><code>is_full</code> — false (default), true (include head metadata)</li>
+<li><code>is_spa</code> — false (default), true (render via headless Chromium)</li>
 <li><code>timeout</code> — 1-30 (default: 15)</li>
 <li><code>max_apis</code> — 1-10 (default: 5)</li>
 </ul>

@@ -8,6 +8,7 @@ date_default_timezone_set('Asia/Tokyo');
 
 use LiteStrip\Config\ServerConfig;
 use LiteStrip\Fetcher\HtmlFetcher;
+use LiteStrip\Fetcher\SpaRenderer;
 use LiteStrip\Fetcher\UrlValidator;
 use LiteStrip\Follower\ApiFollower;
 use LiteStrip\Formatter\HtmlFormatter;
@@ -27,6 +28,11 @@ $browser = new React\Http\Browser();
 
 $urlValidator = new UrlValidator($dnsResolver);
 $htmlFetcher = new HtmlFetcher($browser);
+
+$chromiumHost = getenv('CHROMIUM_HOST') ?: null;
+$chromiumPort = (int) (getenv('CHROMIUM_PORT') ?: 9222);
+$spaRenderer = $chromiumHost ? new SpaRenderer($chromiumHost, $chromiumPort) : null;
+
 $scriptAnalyzer = new ScriptAnalyzer();
 $apiFollower = new ApiFollower($htmlFetcher, $urlValidator);
 $contentExtractor = new ContentExtractor();
@@ -35,6 +41,7 @@ $domProcessor = new DomProcessor();
 $handler = new RequestHandler(
     $urlValidator,
     $htmlFetcher,
+    $spaRenderer,
     $scriptAnalyzer,
     $apiFollower,
     $contentExtractor,

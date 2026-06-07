@@ -10,7 +10,8 @@
         "react/promise": "^3.2",
         "react/dns": "^1.13",
         "react/socket": "^1.16",
-        "league/html-to-markdown": "^5.1"
+        "league/html-to-markdown": "^5.1",
+        "chrome-php/chrome": "^1.15"
     },
     "autoload": {
         "psr-4": {
