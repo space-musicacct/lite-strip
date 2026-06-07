@@ -59,6 +59,7 @@ curl "http://localhost:8080/?url=https://example.com&is_spa=true"
 | `follow_apis` | bool | `true` | Detect and follow API endpoints in scripts |
 | `is_full` | bool | `false` | Include `<head>` metadata in output |
 | `is_spa` | bool | `false` | Render via headless Chromium (requires `ENABLE_SPA=true`) |
+| `timezone` | string | (server default) | IANA timezone for `fetchedAt` (e.g. `Asia/Tokyo`, `UTC`) |
 | `timeout` | int | `15` | Request timeout in seconds (max 30) |
 | `max_apis` | int | `5` | Max API endpoints to follow (max 10) |
 

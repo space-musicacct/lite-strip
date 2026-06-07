@@ -57,6 +57,7 @@ curl "http://localhost:8080/?url=https://example.com&is_spa=true"
 | `follow_apis` | bool | `true` | script 内の API エンドポイントを検出・追従するか |
 | `is_full` | bool | `false` | `<head>` メタデータを含めるか |
 | `is_spa` | bool | `false` | ヘッドレス Chromium でレンダリングするか (`ENABLE_SPA=true` が必要) |
+| `timezone` | string | (サーバーデフォルト) | `fetchedAt` の IANA タイムゾーン (例: `Asia/Tokyo`, `UTC`) |
 | `timeout` | int | `15` | リクエストタイムアウト (秒、最大 30) |
 | `max_apis` | int | `5` | 追従する API エンドポイントの最大数 (最大 10) |
 
