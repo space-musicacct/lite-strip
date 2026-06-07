@@ -130,7 +130,7 @@ class RequestHandler
         }
 
         // 4. コンテンツ抽出
-        $processedHtml = $extractMain ? $this->contentExtractor->extract($html) : $html;
+        $processedHtml = $this->contentExtractor->extract($html, !$extractMain);
 
         // 5. DOM 処理 (属性剥がし)
         $cleanHtml = $this->domProcessor->process($processedHtml);
@@ -194,7 +194,7 @@ class RequestHandler
                 ]), $body);
 
             default: // html
-                $body = $this->htmlFormatter->format($url, $cleanHtml, $apiResult['apiData']);
+                $body = $this->htmlFormatter->format($url, $cleanHtml, $apiResult['apiData'], $apiResult['failedApis']);
                 $commonHeaders['X-LiteStrip-Output-Size'] = (string) strlen($body);
                 return new Response(200, array_merge($commonHeaders, [
                     'Content-Type' => 'text/html; charset=utf-8',

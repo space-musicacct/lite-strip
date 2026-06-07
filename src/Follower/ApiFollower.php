@@ -62,19 +62,40 @@ class ApiFollower
 
         foreach ($validEndpoints as $url) {
             try {
-                $body = $this->fetcher->fetchText($url);
+                $result = $this->fetcher->fetchWithStatus($url);
+                $body = $result['body'];
+                $status = $result['status'];
+                $reasonPhrase = $result['reasonPhrase'];
+                $contentType = $result['contentType'];
+
                 $data = json_decode($body, true);
                 $isJson = json_last_error() === JSON_ERROR_NONE;
+                $parsedData = $isJson ? $data : $body;
 
-                $apiData[] = [
-                    'url' => $url,
-                    'status' => 200,
-                    'contentType' => $isJson ? 'application/json' : 'text/plain',
-                    'data' => $isJson ? $data : $body,
-                ];
+                if ($status >= 400) {
+                    $failedApis[] = [
+                        'url' => $url,
+                        'status' => $status,
+                        'statusMessage' => $reasonPhrase,
+                        'contentType' => $contentType,
+                        'data' => $parsedData,
+                        'error' => "HTTP_{$status}",
+                    ];
+                } else {
+                    $apiData[] = [
+                        'url' => $url,
+                        'status' => $status,
+                        'contentType' => $isJson ? 'application/json' : $contentType,
+                        'data' => $parsedData,
+                    ];
+                }
             } catch (\Throwable $e) {
                 $failedApis[] = [
                     'url' => $url,
+                    'status' => 0,
+                    'statusMessage' => '',
+                    'contentType' => '',
+                    'data' => null,
                     'error' => $this->classifyError($e->getMessage()),
                 ];
             }

@@ -78,6 +78,14 @@ class HtmlFetcher
      */
     public function fetchText(string $url, int $timeout = ServerConfig::API_ENDPOINT_TIMEOUT): string
     {
+        return $this->fetchWithStatus($url, $timeout)['body'];
+    }
+
+    /**
+     * @return array{body: string, status: int, reasonPhrase: string, contentType: string}
+     */
+    public function fetchWithStatus(string $url, int $timeout = ServerConfig::API_ENDPOINT_TIMEOUT): array
+    {
         $browser = $this->browser->withTimeout($timeout);
 
         /** @var ResponseInterface $response */
@@ -88,7 +96,12 @@ class HtmlFetcher
             throw new \RuntimeException('API response exceeds maximum size');
         }
 
-        return $body;
+        return [
+            'body' => $body,
+            'status' => $response->getStatusCode(),
+            'reasonPhrase' => $response->getReasonPhrase(),
+            'contentType' => $response->getHeaderLine('Content-Type'),
+        ];
     }
 
     private function resolveRedirect(string $baseUrl, string $location): string

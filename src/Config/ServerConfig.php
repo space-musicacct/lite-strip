@@ -9,7 +9,7 @@ final class ServerConfig
     public const VERSION = '1.0.0';
     public const DEFAULT_PORT = 8080;
 
-    public const DEFAULT_FORMAT = 'html';
+    public const DEFAULT_FORMAT = 'json';
     public const ALLOWED_FORMATS = ['html', 'json', 'markdown'];
 
     public const DEFAULT_TIMEOUT = 15;
