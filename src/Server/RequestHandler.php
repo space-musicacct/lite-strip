@@ -20,8 +20,6 @@ use React\Http\Message\Response;
 
 class RequestHandler
 {
-    private bool $spaLock = false;
-
     public function __construct(
         private readonly UrlValidator $urlValidator,
         private readonly HtmlFetcher $htmlFetcher,
@@ -35,7 +33,7 @@ class RequestHandler
         private readonly MarkdownFormatter $markdownFormatter,
     ) {}
 
-    public function handle(ServerRequestInterface $request): Response
+    public function handle(ServerRequestInterface $request): Response|\React\Promise\PromiseInterface
     {
         $method = $request->getMethod();
         $path = $request->getUri()->getPath();
@@ -62,10 +60,14 @@ class RequestHandler
             return $this->cors($this->errorResponse(400, 'INVALID_PARAMETER', $e->getMessage()));
         }
 
-        return $this->cors($this->processUrl($options));
+        $result = $this->processUrl($options);
+        if ($result instanceof \React\Promise\PromiseInterface) {
+            return $result;
+        }
+        return $this->cors($result);
     }
 
-    private function processUrl(array $options): Response
+    private function processUrl(array $options): Response|\React\Promise\PromiseInterface
     {
         $url = $options['url'];
         $format = $options['format'];
@@ -75,25 +77,6 @@ class RequestHandler
         $timeout = $options['timeout'];
         $maxApis = $options['maxApis'];
 
-        // SPA ロック (子プロセスの Fiber 競合防止のため、同時に 1 リクエストのみ)
-        if ($isSpa) {
-            if ($this->spaLock) {
-                return $this->errorResponse(503, 'SPA_BUSY', 'SPA renderer is processing another request. Try again later.');
-            }
-            $this->spaLock = true;
-        }
-
-        try {
-            return $this->doProcess($url, $format, $followApis, $isFull, $isSpa, $timeout, $maxApis);
-        } finally {
-            if ($isSpa) {
-                $this->spaLock = false;
-            }
-        }
-    }
-
-    private function doProcess(string $url, string $format, bool $followApis, bool $isFull, bool $isSpa, int $timeout, int $maxApis): Response
-    {
         $startTime = hrtime(true);
 
         // 1. URL 検証
@@ -106,13 +89,27 @@ class RequestHandler
         }
 
         // 2. HTML 取得
+        if ($isSpa && $this->spaRenderer) {
+            return $this->spaRenderer->renderAsync($url, $timeout)->then(
+                function (array $fetchResult) use ($url, $format, $followApis, $isFull, $timeout, $maxApis, $startTime) {
+                    $fetchResult['contentType'] = 'text/html';
+                    return $this->cors($this->buildResponse($url, $format, $followApis, $isFull, $timeout, $maxApis, $startTime, $fetchResult));
+                },
+                function (\Throwable $e) {
+                    $msg = $e->getMessage();
+                    if (str_contains(strtolower($msg), 'queue is full')) {
+                        return $this->cors($this->errorResponse(503, 'SPA_QUEUE_FULL', $msg));
+                    }
+                    if (str_contains(strtolower($msg), 'timeout')) {
+                        return $this->cors($this->errorResponse(504, 'TIMEOUT', 'SPA rendering timed out'));
+                    }
+                    return $this->cors($this->errorResponse(502, 'FETCH_FAILED', 'SPA rendering failed: ' . $msg));
+                }
+            );
+        }
+
         try {
-            if ($isSpa && $this->spaRenderer) {
-                $fetchResult = $this->spaRenderer->render($url, $timeout);
-                $fetchResult['contentType'] = 'text/html';
-            } else {
-                $fetchResult = $this->htmlFetcher->fetch($url, $timeout);
-            }
+            $fetchResult = $this->htmlFetcher->fetch($url, $timeout);
         } catch (\RuntimeException $e) {
             $msg = $e->getMessage();
             if (str_contains(strtolower($msg), 'timeout') || str_contains(strtolower($msg), 'timed out')) {
@@ -124,17 +121,21 @@ class RequestHandler
             return $this->errorResponse(502, 'FETCH_FAILED', $msg);
         }
 
+        return $this->buildResponse($url, $format, $followApis, $isFull, $timeout, $maxApis, $startTime, $fetchResult);
+    }
+
+    private function buildResponse(string $url, string $format, bool $followApis, bool $isFull, int $timeout, int $maxApis, int $startTime, array $fetchResult): Response
+    {
         $html = $fetchResult['html'];
         $finalUrl = $fetchResult['finalUrl'];
         $originalSize = strlen($html);
         $fetchTimeMs = (int) ((hrtime(true) - $startTime) / 1_000_000);
 
-        // 3. Script 解析 + API 追従
+        // Script 解析 + API 追従
         $apiResult = ['apiData' => [], 'failedApis' => [], 'detectedApis' => []];
         if ($followApis) {
             $endpoints = $this->scriptAnalyzer->extractFromHtml($html);
 
-            // same-origin 外部 JS も解析
             $scriptSources = $this->scriptAnalyzer->extractScriptSources($html);
             foreach ($scriptSources as $src) {
                 $resolvedSrc = $this->urlValidator->resolveUrl($finalUrl, $src);
@@ -152,26 +153,19 @@ class RequestHandler
             }
 
             $endpoints = array_values(array_unique($endpoints));
-
             if (!empty($endpoints)) {
                 $apiResult = $this->apiFollower->follow($finalUrl, $endpoints, $maxApis);
             }
         }
 
-        // 4. コンテンツ抽出
         $processedHtml = $this->contentExtractor->extract($html, $isFull);
-
-        // 5. DOM 処理 (属性剥がし)
         $cleanHtml = $this->domProcessor->process($processedHtml);
-
-        // 6. メタデータ抽出
         $title = $this->extractTitle($html);
         $meta = $this->extractMeta($html);
 
         $processTimeMs = (int) ((hrtime(true) - $startTime) / 1_000_000) - $fetchTimeMs;
         $totalTimeMs = $fetchTimeMs + $processTimeMs;
 
-        // 7. 出力整形
         $commonHeaders = [
             'X-LiteStrip-Version' => ServerConfig::VERSION,
             'X-LiteStrip-Fetch-Time' => (string) $fetchTimeMs,
@@ -222,7 +216,7 @@ class RequestHandler
                     'Content-Type' => 'text/markdown; charset=utf-8',
                 ]), $body);
 
-            default: // html
+            default:
                 $body = $this->htmlFormatter->format($url, $cleanHtml, $apiResult['apiData'], $apiResult['failedApis']);
                 $commonHeaders['X-LiteStrip-Output-Size'] = (string) strlen($body);
                 return new Response(200, array_merge($commonHeaders, [

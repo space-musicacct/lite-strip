@@ -4,16 +4,20 @@ declare(strict_types=1);
 
 namespace LiteStrip\Fetcher;
 
-use React\ChildProcess\Process;
 use React\Promise\Deferred;
-
-use function React\Async\await;
+use React\Promise\PromiseInterface;
 
 class SpaRenderer
 {
     private string $chromiumHost;
     private int $chromiumPort;
     private string $workerScript;
+
+    private bool $processing = false;
+    /** @var list<array{url: string, timeout: int, deferred: Deferred}> */
+    private array $queue = [];
+
+    private const MAX_QUEUE_SIZE = 10;
 
     public function __construct(
         string $chromiumHost = 'chromium',
@@ -25,11 +29,53 @@ class SpaRenderer
     }
 
     /**
-     * @param string $url     レンダリング対象 URL
-     * @param int    $timeout タイムアウト秒数
+     * @return PromiseInterface<array{html: string, finalUrl: string, status: int}>
+     */
+    public function renderAsync(string $url, int $timeout = 15): PromiseInterface
+    {
+        if (count($this->queue) >= self::MAX_QUEUE_SIZE) {
+            return \React\Promise\reject(
+                new \RuntimeException('SPA render queue is full. Try again later.')
+            );
+        }
+
+        $deferred = new Deferred();
+        $this->queue[] = ['url' => $url, 'timeout' => $timeout, 'deferred' => $deferred];
+
+        if (!$this->processing) {
+            \React\EventLoop\Loop::futureTick(fn() => $this->processNext());
+        }
+
+        return $deferred->promise();
+    }
+
+    private function processNext(): void
+    {
+        if ($this->processing || empty($this->queue)) {
+            return;
+        }
+
+        $this->processing = true;
+        $item = array_shift($this->queue);
+
+        try {
+            $result = $this->execWorker($item['url'], $item['timeout']);
+            $item['deferred']->resolve($result);
+        } catch (\Throwable $e) {
+            $item['deferred']->reject($e);
+        }
+
+        $this->processing = false;
+
+        if (!empty($this->queue)) {
+            \React\EventLoop\Loop::futureTick(fn() => $this->processNext());
+        }
+    }
+
+    /**
      * @return array{html: string, finalUrl: string, status: int}
      */
-    public function render(string $url, int $timeout = 15): array
+    private function execWorker(string $url, int $timeout): array
     {
         $input = json_encode([
             'url' => $url,
@@ -38,50 +84,37 @@ class SpaRenderer
             'chromiumPort' => $this->chromiumPort,
         ]);
 
-        $deferred = new Deferred();
-        $output = '';
-        $errorOutput = '';
+        $descriptors = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
 
-        $process = new Process('php ' . escapeshellarg($this->workerScript));
-        $process->start();
+        $process = proc_open(
+            'php ' . escapeshellarg($this->workerScript),
+            $descriptors,
+            $pipes
+        );
 
-        $process->stdout->on('data', function (string $chunk) use (&$output) {
-            $output .= $chunk;
-        });
-
-        $process->stderr->on('data', function (string $chunk) use (&$errorOutput) {
-            $errorOutput .= $chunk;
-        });
-
-        $process->on('exit', function ($exitCode) use ($deferred, &$output, &$errorOutput) {
-            if ($exitCode !== 0 && $output === '') {
-                $deferred->reject(new \RuntimeException(
-                    'SPA worker failed: ' . ($errorOutput ?: "exit code {$exitCode}")
-                ));
-            } else {
-                $deferred->resolve($output);
-            }
-        });
-
-        $process->stdin->write($input);
-        $process->stdin->end();
-
-        // タイムアウト
-        $timer = \React\EventLoop\Loop::addTimer($timeout + 10, function () use ($process, $deferred) {
-            $process->terminate(9);
-            $deferred->reject(new \RuntimeException('SPA rendering timed out'));
-        });
-
-        try {
-            /** @var string $result */
-            $result = await($deferred->promise());
-            \React\EventLoop\Loop::cancelTimer($timer);
-        } catch (\Throwable $e) {
-            \React\EventLoop\Loop::cancelTimer($timer);
-            throw new \RuntimeException('SPA rendering failed: ' . $e->getMessage(), 0, $e);
+        if (!is_resource($process)) {
+            throw new \RuntimeException('Failed to start SPA worker process');
         }
 
-        $data = json_decode($result, true);
+        fwrite($pipes[0], $input);
+        fclose($pipes[0]);
+
+        $output = stream_get_contents($pipes[1]);
+        $errorOutput = stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+
+        $exitCode = proc_close($process);
+
+        if ($output === false || $output === '') {
+            throw new \RuntimeException('SPA worker returned no output: ' . ($errorOutput ?: "exit code {$exitCode}"));
+        }
+
+        $data = json_decode($output, true);
         if (!$data || !($data['ok'] ?? false)) {
             throw new \RuntimeException('SPA rendering failed: ' . ($data['error'] ?? 'Unknown error'));
         }
