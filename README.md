@@ -170,29 +170,16 @@ services:
 
 ## How It Works
 
-```
-URL input
-  |
-  v
-URL Validation (SSRF check: DNS resolve -> IP blocklist)
-  |
-  v
-HTML Fetch (ReactPHP HTTP Client, non-blocking)
-  |
-  v
-Script Analysis (regex: fetch(), axios.get(), $.get(), $.getJSON())
-  |
-  v
-API Following (parallel async requests, same-origin GET only)
-  |
-  v
-Content Extraction (body content, or full page with is_full=true)
-  |
-  v
-DOM Processing (strip attributes via allowlist, remove script/style/noscript)
-  |
-  v
-Output Formatting (JSON / HTML / Markdown)
+```mermaid
+flowchart TD
+    A[URL Input] --> B[URL Validation]
+    B -->|SSRF check: DNS resolve → IP blocklist| C[HTML Fetch]
+    C -->|ReactPHP HTTP Client, non-blocking| D[Script Analysis]
+    D -->|regex: fetch, axios.get, $.get, $.getJSON| E[API Following]
+    E -->|parallel async, same-origin GET only| F[Content Extraction]
+    F -->|body content, or full page with is_full=true| G[DOM Processing]
+    G -->|strip attributes via allowlist| H[Output Formatting]
+    H --> I[JSON / HTML / Markdown]
 ```
 
 ### Attribute Allowlist

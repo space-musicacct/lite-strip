@@ -164,29 +164,16 @@ services:
 
 ## 仕組み
 
-```
-URL 入力
-  |
-  v
-URL 検証 (SSRF チェック: DNS 解決 → IP ブロックリスト)
-  |
-  v
-HTML 取得 (ReactPHP HTTP Client、ノンブロッキング)
-  |
-  v
-スクリプト解析 (正規表現: fetch()、axios.get()、$.get()、$.getJSON())
-  |
-  v
-API 追従 (非同期並列、same-origin GET のみ)
-  |
-  v
-コンテンツ抽出 (body のみ、または is_full=true で全体)
-  |
-  v
-DOM 処理 (allowlist で属性剥がし、script/style/noscript 削除)
-  |
-  v
-出力整形 (JSON / HTML / Markdown)
+```mermaid
+flowchart TD
+    A[URL 入力] --> B[URL 検証]
+    B -->|SSRF チェック: DNS 解決 → IP ブロックリスト| C[HTML 取得]
+    C -->|ReactPHP HTTP Client、ノンブロッキング| D[スクリプト解析]
+    D -->|正規表現: fetch, axios.get, $.get, $.getJSON| E[API 追従]
+    E -->|非同期並列、same-origin GET のみ| F[コンテンツ抽出]
+    F -->|body のみ、または is_full=true で全体| G[DOM 処理]
+    G -->|allowlist で属性剥がし| H[出力整形]
+    H --> I[JSON / HTML / Markdown]
 ```
 
 ### 属性 allowlist
