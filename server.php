@@ -18,6 +18,7 @@ use LiteStrip\Processor\ContentExtractor;
 use LiteStrip\Processor\DomProcessor;
 use LiteStrip\Processor\ScriptAnalyzer;
 use LiteStrip\Server\RequestHandler;
+use Psr\Http\Message\ServerRequestInterface;
 use React\Http\HttpServer;
 use React\Socket\SocketServer;
 
@@ -52,10 +53,10 @@ $handler = new RequestHandler(
     new MarkdownFormatter(),
 );
 
-$server = new HttpServer(function (\Psr\Http\Message\ServerRequestInterface $request) use ($handler) {
+$server = new HttpServer(function (ServerRequestInterface $request) use ($handler) {
     try {
         return $handler->handle($request);
-    } catch (\Throwable $e) {
+    } catch (Throwable $e) {
         error_log('[LiteStrip] Unhandled exception: ' . $e->getMessage());
         return new React\Http\Message\Response(500, [
             'Content-Type' => 'application/json; charset=utf-8',
@@ -67,10 +68,10 @@ $server = new HttpServer(function (\Psr\Http\Message\ServerRequestInterface $req
     }
 });
 
-$socket = new SocketServer("0.0.0.0:{$port}");
+$socket = new SocketServer("0.0.0.0:$port");
 $server->listen($socket);
 
-echo "LiteStrip v" . ServerConfig::VERSION . " listening on http://0.0.0.0:{$port}\n";
+echo "LiteStrip v" . ServerConfig::VERSION . " listening on http://0.0.0.0:$port\n";
 
 $shutdown = function () use ($socket) {
     echo "Shutting down...\n";

@@ -17,7 +17,8 @@
         "react/socket": "^1.16",
         "league/html-to-markdown": "^5.1",
         "chrome-php/chrome": "^1.15",
-        "react/child-process": "^0.6.7"
+        "react/child-process": "^0.6.7",
+        "ext-pcntl": "*"
     },
     "autoload": {
         "psr-4": {
