@@ -20,7 +20,7 @@ URL を渡すと、スタイリング属性を除去したクリーンな構造 
 ```bash
 git clone https://github.com/space-musicacct/lite-strip.git
 cd lite-strip
-docker compose up -d
+docker compose up --build -d
 ```
 
 ```bash

@@ -22,7 +22,7 @@ LiteStrip takes a URL and returns clean, structured HTML with all styling attrib
 ```bash
 git clone https://github.com/space-musicacct/lite-strip.git
 cd lite-strip
-docker compose up -d
+docker compose up --build -d
 ```
 
 ```bash
