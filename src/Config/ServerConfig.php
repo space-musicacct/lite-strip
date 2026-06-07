@@ -20,13 +20,12 @@ final class ServerConfig
 
     public const API_ENDPOINT_TIMEOUT = 10;
 
-    public const MAX_HTML_SIZE = 2 * 1024 * 1024; // 2 MB
-    public const MAX_API_RESPONSE_SIZE = 1 * 1024 * 1024; // 1 MB
-    public const MAX_OUTPUT_SIZE = 5 * 1024 * 1024; // 5 MB
+    public const ONE_MEGABYTE_IN_BYTES = 1024 * 1024;
+    public const MAX_HTML_SIZE = 2 * self::ONE_MEGABYTE_IN_BYTES;
+    public const MAX_API_RESPONSE_SIZE = self::ONE_MEGABYTE_IN_BYTES;
 
     public const MAX_URL_LENGTH = 2048;
     public const MAX_REDIRECTS = 3;
-    public const MAX_SAME_DOMAIN_CONNECTIONS = 2;
 
     public const USER_AGENT = 'LiteStrip/' . self::VERSION . ' (+https://github.com/space-musicacct/lite-strip)';
 
