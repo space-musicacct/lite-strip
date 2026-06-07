@@ -8,6 +8,8 @@ use LiteStrip\Config\ServerConfig;
 use React\Http\Browser;
 use Psr\Http\Message\ResponseInterface;
 
+use RuntimeException;
+use Throwable;
 use function React\Async\await;
 
 class HtmlFetcher
@@ -27,7 +29,7 @@ class HtmlFetcher
      * @param string $url     取得対象 URL
      * @param int    $timeout タイムアウト秒数
      * @return array{html: string, finalUrl: string, status: int, contentType: string}
-     * @throws \RuntimeException 取得失敗時
+     * @throws RuntimeException|Throwable 取得失敗時
      */
     public function fetch(string $url, int $timeout = ServerConfig::DEFAULT_TIMEOUT): array
     {
@@ -43,12 +45,12 @@ class HtmlFetcher
             if ($status >= 300 && $status < 400) {
                 $redirectCount++;
                 if ($redirectCount > ServerConfig::MAX_REDIRECTS) {
-                    throw new \RuntimeException('Too many redirects');
+                    throw new RuntimeException('Too many redirects');
                 }
 
                 $location = $response->getHeaderLine('Location');
                 if ($location === '') {
-                    throw new \RuntimeException('Redirect without Location header');
+                    throw new RuntimeException('Redirect without Location header');
                 }
 
                 $finalUrl = $this->resolveRedirect($finalUrl, $location);
@@ -58,7 +60,7 @@ class HtmlFetcher
             $body = (string) $response->getBody();
 
             if (strlen($body) > ServerConfig::MAX_HTML_SIZE) {
-                throw new \RuntimeException('Response exceeds maximum size of ' . ServerConfig::MAX_HTML_SIZE . ' bytes');
+                throw new RuntimeException('Response exceeds maximum size of ' . ServerConfig::MAX_HTML_SIZE . ' bytes');
             }
 
             $contentType = $response->getHeaderLine('Content-Type');
@@ -75,6 +77,7 @@ class HtmlFetcher
     /**
      * @param string $url 取得対象 URL
      * @return string レスポンスボディ
+     * @throws Throwable
      */
     public function fetchText(string $url, int $timeout = ServerConfig::API_ENDPOINT_TIMEOUT): string
     {
@@ -83,6 +86,7 @@ class HtmlFetcher
 
     /**
      * @return array{body: string, status: int, reasonPhrase: string, contentType: string}
+     * @throws Throwable
      */
     public function fetchWithStatus(string $url, int $timeout = ServerConfig::API_ENDPOINT_TIMEOUT): array
     {
@@ -93,7 +97,7 @@ class HtmlFetcher
         $body = (string) $response->getBody();
 
         if (strlen($body) > ServerConfig::MAX_API_RESPONSE_SIZE) {
-            throw new \RuntimeException('API response exceeds maximum size');
+            throw new RuntimeException('API response exceeds maximum size');
         }
 
         return [

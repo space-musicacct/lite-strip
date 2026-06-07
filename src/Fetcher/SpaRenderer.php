@@ -6,6 +6,7 @@ namespace LiteStrip\Fetcher;
 
 use React\Promise\Deferred;
 use React\Promise\PromiseInterface;
+use RuntimeException;
 
 class SpaRenderer
 {
@@ -97,7 +98,7 @@ class SpaRenderer
         );
 
         if (!is_resource($process)) {
-            throw new \RuntimeException('Failed to start SPA worker process');
+            throw new RuntimeException('Failed to start SPA worker process');
         }
 
         fwrite($pipes[0], $input);
@@ -111,12 +112,12 @@ class SpaRenderer
         $exitCode = proc_close($process);
 
         if ($output === false || $output === '') {
-            throw new \RuntimeException('SPA worker returned no output: ' . ($errorOutput ?: "exit code {$exitCode}"));
+            throw new RuntimeException('SPA worker returned no output: ' . ($errorOutput ?: "exit code {$exitCode}"));
         }
 
         $data = json_decode($output, true);
         if (!$data || !($data['ok'] ?? false)) {
-            throw new \RuntimeException('SPA rendering failed: ' . ($data['error'] ?? 'Unknown error'));
+            throw new RuntimeException('SPA rendering failed: ' . ($data['error'] ?? 'Unknown error'));
         }
 
         return [

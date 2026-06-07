@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace LiteStrip\Fetcher;
 
+use InvalidArgumentException;
 use LiteStrip\Config\BlockedNetworks;
 use LiteStrip\Config\ServerConfig;
 use React\Dns\Resolver\ResolverInterface;
+use RuntimeException;
 
 use function React\Async\await;
 
@@ -17,40 +19,40 @@ class UrlValidator
     ) {}
 
     /**
-     * @throws \InvalidArgumentException URL が不正な場合
-     * @throws \RuntimeException         SSRF ブロック時
+     * @throws InvalidArgumentException URL が不正な場合
+     * @throws RuntimeException         SSRF ブロック時
      */
     public function validate(string $url): void
     {
         if (strlen($url) > ServerConfig::MAX_URL_LENGTH) {
-            throw new \InvalidArgumentException('URL exceeds maximum length of ' . ServerConfig::MAX_URL_LENGTH);
+            throw new InvalidArgumentException('URL exceeds maximum length of ' . ServerConfig::MAX_URL_LENGTH);
         }
 
         $parsed = parse_url($url);
         if ($parsed === false || !isset($parsed['scheme'], $parsed['host'])) {
-            throw new \InvalidArgumentException('Invalid URL format');
+            throw new InvalidArgumentException('Invalid URL format');
         }
 
         $scheme = strtolower($parsed['scheme']);
         if ($scheme !== 'http' && $scheme !== 'https') {
-            throw new \InvalidArgumentException('Only http and https schemes are supported');
+            throw new InvalidArgumentException('Only http and https schemes are supported');
         }
 
         if (isset($parsed['user']) || isset($parsed['pass'])) {
-            throw new \InvalidArgumentException('URLs with credentials are not allowed');
+            throw new InvalidArgumentException('URLs with credentials are not allowed');
         }
 
         $this->validateHost($parsed['host']);
     }
 
     /**
-     * @throws \RuntimeException SSRF ブロック時
+     * @throws RuntimeException SSRF ブロック時
      */
     public function validateHost(string $host): void
     {
         if (filter_var($host, FILTER_VALIDATE_IP)) {
             if (BlockedNetworks::isBlocked($host)) {
-                throw new \RuntimeException('The requested URL resolves to a private network address');
+                throw new RuntimeException('The requested URL resolves to a private network address');
             }
             return;
         }
@@ -59,15 +61,15 @@ class UrlValidator
             /** @var string|null $ip */
             $ip = await($this->dnsResolver->resolve($host));
         } catch (\Exception $e) {
-            throw new \RuntimeException('DNS resolution failed for host: ' . $host);
+            throw new RuntimeException('DNS resolution failed for host: ' . $host);
         }
 
         if ($ip === null || !is_string($ip)) {
-            throw new \RuntimeException('DNS resolution returned no result for host: ' . $host);
+            throw new RuntimeException('DNS resolution returned no result for host: ' . $host);
         }
 
         if (BlockedNetworks::isBlocked($ip)) {
-            throw new \RuntimeException('The requested URL resolves to a private network address');
+            throw new RuntimeException('The requested URL resolves to a private network address');
         }
     }
 

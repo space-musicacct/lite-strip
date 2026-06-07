@@ -15,6 +15,7 @@ use LiteStrip\Formatter\MarkdownFormatter;
 use LiteStrip\Processor\ContentExtractor;
 use LiteStrip\Processor\DomProcessor;
 use LiteStrip\Processor\ScriptAnalyzer;
+use InvalidArgumentException;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Message\Response;
 
@@ -239,11 +240,11 @@ class RequestHandler
         if ($method === 'POST') {
             $contentType = $request->getHeaderLine('Content-Type');
             if (!str_contains($contentType, 'application/json')) {
-                throw new \InvalidArgumentException('POST requests must use Content-Type: application/json');
+                throw new InvalidArgumentException('POST requests must use Content-Type: application/json');
             }
             $body = json_decode((string) $request->getBody(), true);
             if (!is_array($body)) {
-                throw new \InvalidArgumentException('Invalid JSON body');
+                throw new InvalidArgumentException('Invalid JSON body');
             }
             $params = $body;
         } else {
@@ -252,12 +253,12 @@ class RequestHandler
 
         $url = $params['url'] ?? '';
         if ($url === '') {
-            throw new \InvalidArgumentException('Missing required parameter: url');
+            throw new InvalidArgumentException('Missing required parameter: url');
         }
 
         $format = $params['format'] ?? ServerConfig::DEFAULT_FORMAT;
         if (!in_array($format, ServerConfig::ALLOWED_FORMATS, true)) {
-            throw new \InvalidArgumentException('Invalid format. Allowed: ' . implode(', ', ServerConfig::ALLOWED_FORMATS));
+            throw new InvalidArgumentException('Invalid format. Allowed: ' . implode(', ', ServerConfig::ALLOWED_FORMATS));
         }
 
         $followApis = filter_var($params['follow_apis'] ?? true, FILTER_VALIDATE_BOOLEAN);
@@ -266,12 +267,12 @@ class RequestHandler
 
         $timeout = (int) ($params['timeout'] ?? ServerConfig::DEFAULT_TIMEOUT);
         if ($timeout < 1 || $timeout > ServerConfig::MAX_TIMEOUT) {
-            throw new \InvalidArgumentException('timeout must be between 1 and ' . ServerConfig::MAX_TIMEOUT);
+            throw new InvalidArgumentException('timeout must be between 1 and ' . ServerConfig::MAX_TIMEOUT);
         }
 
         $maxApis = (int) ($params['max_apis'] ?? ServerConfig::DEFAULT_MAX_APIS);
         if ($maxApis < 1 || $maxApis > ServerConfig::MAX_MAX_APIS) {
-            throw new \InvalidArgumentException('max_apis must be between 1 and ' . ServerConfig::MAX_MAX_APIS);
+            throw new InvalidArgumentException('max_apis must be between 1 and ' . ServerConfig::MAX_MAX_APIS);
         }
 
         return compact('url', 'format', 'followApis', 'isFull', 'isSpa', 'timeout', 'maxApis');
