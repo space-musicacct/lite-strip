@@ -31,4 +31,6 @@ final class ServerConfig
     public const MAX_SAME_DOMAIN_CONNECTIONS = 2;
 
     public const USER_AGENT = 'LiteStrip/' . self::VERSION . ' (+https://github.com/space-musicacct/lite-strip)';
+
+    public const ENABLE_SPA_DEFAULT = true;
 }

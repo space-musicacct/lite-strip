@@ -89,6 +89,9 @@ class RequestHandler
         }
 
         // 2. HTML 取得
+        if ($isSpa && !$this->spaRenderer) {
+            return $this->errorResponse(501, 'SPA_DISABLED', 'SPA rendering is not enabled on this instance. Set ENABLE_SPA=true and configure Chromium.');
+        }
         if ($isSpa && $this->spaRenderer) {
             return $this->spaRenderer->renderAsync($url, $timeout)->then(
                 function (array $fetchResult) use ($url, $format, $followApis, $isFull, $timeout, $maxApis, $startTime) {
@@ -300,7 +303,7 @@ GET /?url=https://example.com&amp;format=markdown</pre>
 <li><code>format</code> — html (default), json, markdown</li>
 <li><code>follow_apis</code> — true (default), false</li>
 <li><code>is_full</code> — false (default), true (include head metadata)</li>
-<li><code>is_spa</code> — false (default), true (render via headless Chromium)</li>
+<li><code>is_spa</code> — false (default), true (render via headless Chromium, requires ENABLE_SPA=true)</li>
 <li><code>timeout</code> — 1-30 (default: 15)</li>
 <li><code>max_apis</code> — 1-10 (default: 5)</li>
 </ul>

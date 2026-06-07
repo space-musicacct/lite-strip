@@ -29,9 +29,10 @@ $browser = new React\Http\Browser();
 $urlValidator = new UrlValidator($dnsResolver);
 $htmlFetcher = new HtmlFetcher($browser);
 
+$enableSpa = filter_var(getenv('ENABLE_SPA') ?: ServerConfig::ENABLE_SPA_DEFAULT, FILTER_VALIDATE_BOOLEAN);
 $chromiumHost = getenv('CHROMIUM_HOST') ?: null;
 $chromiumPort = (int) (getenv('CHROMIUM_PORT') ?: 9222);
-$spaRenderer = $chromiumHost ? new SpaRenderer($chromiumHost, $chromiumPort) : null;
+$spaRenderer = ($enableSpa && $chromiumHost) ? new SpaRenderer($chromiumHost, $chromiumPort) : null;
 
 $scriptAnalyzer = new ScriptAnalyzer();
 $apiFollower = new ApiFollower($htmlFetcher, $urlValidator);
