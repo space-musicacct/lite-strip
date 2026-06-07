@@ -23,9 +23,11 @@ cd lite-strip
 docker compose up -d --build
 ```
 
+### curl
+
 ```bash
 # JSON 出力 (デフォルト)
-curl "http://localhost:8080/?url=https://example.com"
+curl "http://localhost:8080/?url=https://example.com&timezone=Asia/Tokyo"
 
 # HTML 出力
 curl "http://localhost:8080/?url=https://example.com&format=html"
@@ -35,6 +37,33 @@ curl "http://localhost:8080/?url=https://example.com&format=markdown"
 
 # SPA レンダリング (ENABLE_SPA=true が必要)
 curl "http://localhost:8080/?url=https://example.com&is_spa=true"
+```
+
+### JavaScript (fetch)
+
+```javascript
+const response = await fetch(
+  "http://localhost:8080/?url=https://example.com&timezone=Asia/Tokyo"
+);
+const data = await response.json();
+console.log(data.data.title);       // "Example Domain"
+console.log(data.data.contentHtml); // "<h1>Example Domain</h1>..."
+console.log(data.data.detectedApis); // [...]
+```
+
+### Python (requests)
+
+```python
+import requests
+
+response = requests.get(
+    "http://localhost:8080/",
+    params={"url": "https://example.com", "timezone": "Asia/Tokyo"}
+)
+data = response.json()
+print(data["data"]["title"])        # "Example Domain"
+print(data["data"]["contentHtml"])  # "<h1>Example Domain</h1>..."
+print(data["data"]["detectedApis"]) # [...]
 ```
 
 ## API リファレンス
