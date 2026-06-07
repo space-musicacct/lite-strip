@@ -20,6 +20,8 @@ use React\Http\Message\Response;
 
 class RequestHandler
 {
+    private bool $spaLock = false;
+
     public function __construct(
         private readonly UrlValidator $urlValidator,
         private readonly HtmlFetcher $htmlFetcher,
@@ -73,6 +75,25 @@ class RequestHandler
         $timeout = $options['timeout'];
         $maxApis = $options['maxApis'];
 
+        // SPA ロック (子プロセスの Fiber 競合防止のため、同時に 1 リクエストのみ)
+        if ($isSpa) {
+            if ($this->spaLock) {
+                return $this->errorResponse(503, 'SPA_BUSY', 'SPA renderer is processing another request. Try again later.');
+            }
+            $this->spaLock = true;
+        }
+
+        try {
+            return $this->doProcess($url, $format, $followApis, $isFull, $isSpa, $timeout, $maxApis);
+        } finally {
+            if ($isSpa) {
+                $this->spaLock = false;
+            }
+        }
+    }
+
+    private function doProcess(string $url, string $format, bool $followApis, bool $isFull, bool $isSpa, int $timeout, int $maxApis): Response
+    {
         $startTime = hrtime(true);
 
         // 1. URL 検証

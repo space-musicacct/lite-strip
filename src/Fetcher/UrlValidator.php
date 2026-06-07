@@ -57,10 +57,14 @@ class UrlValidator
         }
 
         try {
-            /** @var string $ip */
+            /** @var string|null $ip */
             $ip = await($this->dnsResolver->resolve($host));
         } catch (\Exception $e) {
             throw new \RuntimeException('DNS resolution failed for host: ' . $host);
+        }
+
+        if ($ip === null || !is_string($ip)) {
+            throw new \RuntimeException('DNS resolution returned no result for host: ' . $host);
         }
 
         if (BlockedNetworks::isBlocked($ip)) {

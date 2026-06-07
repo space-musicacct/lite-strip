@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace LiteStrip\Fetcher;
 
-use HeadlessChromium\Browser;
-use HeadlessChromium\Browser\BrowserProcess;
-use HeadlessChromium\Communication\Connection;
+use React\ChildProcess\Process;
+use React\Promise\Deferred;
+
+use function React\Async\await;
 
 class SpaRenderer
 {
     private string $chromiumHost;
     private int $chromiumPort;
+    private string $workerScript;
 
     public function __construct(
         string $chromiumHost = 'chromium',
@@ -19,6 +21,7 @@ class SpaRenderer
     ) {
         $this->chromiumHost = $chromiumHost;
         $this->chromiumPort = $chromiumPort;
+        $this->workerScript = __DIR__ . '/spa-worker.php';
     }
 
     /**
@@ -28,58 +31,65 @@ class SpaRenderer
      */
     public function render(string $url, int $timeout = 15): array
     {
-        $wsEndpoint = $this->discoverWebSocketEndpoint();
+        $input = json_encode([
+            'url' => $url,
+            'timeout' => $timeout,
+            'chromiumHost' => $this->chromiumHost,
+            'chromiumPort' => $this->chromiumPort,
+        ]);
 
-        $connection = new Connection($wsEndpoint);
-        $connection->connect();
+        $deferred = new Deferred();
+        $output = '';
+        $errorOutput = '';
 
-        $browser = new Browser($connection);
+        $process = new Process('php ' . escapeshellarg($this->workerScript));
+        $process->start();
+
+        $process->stdout->on('data', function (string $chunk) use (&$output) {
+            $output .= $chunk;
+        });
+
+        $process->stderr->on('data', function (string $chunk) use (&$errorOutput) {
+            $errorOutput .= $chunk;
+        });
+
+        $process->on('exit', function ($exitCode) use ($deferred, &$output, &$errorOutput) {
+            if ($exitCode !== 0 && $output === '') {
+                $deferred->reject(new \RuntimeException(
+                    'SPA worker failed: ' . ($errorOutput ?: "exit code {$exitCode}")
+                ));
+            } else {
+                $deferred->resolve($output);
+            }
+        });
+
+        $process->stdin->write($input);
+        $process->stdin->end();
+
+        // タイムアウト
+        $timer = \React\EventLoop\Loop::addTimer($timeout + 10, function () use ($process, $deferred) {
+            $process->terminate(9);
+            $deferred->reject(new \RuntimeException('SPA rendering timed out'));
+        });
 
         try {
-            $page = $browser->createPage();
-            $page->navigate($url)->waitForNavigation('networkIdle', $timeout * 1000);
-
-            $html = $page->evaluate('document.documentElement.outerHTML')->getReturnValue();
-            $finalUrl = $page->evaluate('window.location.href')->getReturnValue();
-
-            $page->close();
-
-            return [
-                'html' => $html ?? '',
-                'finalUrl' => $finalUrl ?? $url,
-                'status' => 200,
-            ];
+            /** @var string $result */
+            $result = await($deferred->promise());
+            \React\EventLoop\Loop::cancelTimer($timer);
         } catch (\Throwable $e) {
+            \React\EventLoop\Loop::cancelTimer($timer);
             throw new \RuntimeException('SPA rendering failed: ' . $e->getMessage(), 0, $e);
-        } finally {
-            $connection->disconnect();
-        }
-    }
-
-    private function discoverWebSocketEndpoint(): string
-    {
-        // Chrome は Host ヘッダが IP or localhost でないと拒否するため、
-        // hostname を IP に解決してから全通信を IP ベースで行う
-        $ip = gethostbyname($this->chromiumHost);
-
-        $json = @file_get_contents(
-            "http://{$ip}:{$this->chromiumPort}/json/version",
-            false,
-            stream_context_create(['http' => ['timeout' => 5]])
-        );
-
-        if ($json === false) {
-            throw new \RuntimeException("Cannot connect to Chromium at {$this->chromiumHost}:{$this->chromiumPort}");
         }
 
-        $data = json_decode($json, true);
-        if (!isset($data['webSocketDebuggerUrl'])) {
-            throw new \RuntimeException('Chromium did not return webSocketDebuggerUrl');
+        $data = json_decode($result, true);
+        if (!$data || !($data['ok'] ?? false)) {
+            throw new \RuntimeException('SPA rendering failed: ' . ($data['error'] ?? 'Unknown error'));
         }
 
-        $wsUrl = $data['webSocketDebuggerUrl'];
-        $path = parse_url($wsUrl, PHP_URL_PATH);
-
-        return "ws://{$ip}:{$this->chromiumPort}{$path}";
+        return [
+            'html' => $data['html'],
+            'finalUrl' => $data['finalUrl'],
+            'status' => 200,
+        ];
     }
 }

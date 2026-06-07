@@ -11,7 +11,8 @@
         "react/dns": "^1.13",
         "react/socket": "^1.16",
         "league/html-to-markdown": "^5.1",
-        "chrome-php/chrome": "^1.15"
+        "chrome-php/chrome": "^1.15",
+        "react/child-process": "^0.6.7"
     },
     "autoload": {
         "psr-4": {
