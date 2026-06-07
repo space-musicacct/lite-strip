@@ -10,7 +10,7 @@ namespace LiteStrip\Config;
 final class ServerConfig
 {
     /** @var string Application version */
-    public const string VERSION = '1.0.0';
+    public const string VERSION = '1.0.1';
 
     /** @var int Default HTTP server port */
     public const int DEFAULT_PORT = 8080;
