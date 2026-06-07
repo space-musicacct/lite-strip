@@ -5,6 +5,11 @@
     "license": "MIT",
     "require": {
         "php": ">=8.2",
+        "ext-dom": "*",
+        "ext-libxml": "*",
+        "ext-mbstring": "*",
+        "ext-intl": "*",
+        "ext-sockets": "*",
         "react/http": "^1.10",
         "react/async": "^4.3",
         "react/promise": "^3.2",

@@ -36,7 +36,7 @@ class MarkdownFormatter
                 $data = is_string($api['data'])
                     ? $api['data']
                     : json_encode($api['data'], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-                $markdown .= "```json\n{$data}\n```\n";
+                $markdown .= "```json\n$data\n```\n";
             }
         }
 
