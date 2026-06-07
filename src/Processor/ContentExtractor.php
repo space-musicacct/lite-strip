@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace LiteStrip\Processor;
 
+use DOMDocument;
+
 class ContentExtractor
 {
     /**
@@ -17,7 +19,7 @@ class ContentExtractor
             return $html;
         }
 
-        $doc = new \DOMDocument();
+        $doc = new DOMDocument();
         @$doc->loadHTML(
             '<meta charset="UTF-8">' . $html,
             LIBXML_NOERROR | LIBXML_NOWARNING

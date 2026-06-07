@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace LiteStrip\Processor;
 
+use DOMDocument;
+use DOMElement;
+use DOMXPath;
 use LiteStrip\Config\AllowedAttributes;
 
 class DomProcessor
@@ -22,15 +25,14 @@ class DomProcessor
     ];
 
     /**
-     * @param string $html          処理対象の HTML
-     * @param bool   $extractBefore ScriptAnalyzer で script を抽出済みか
+     * @param string $html 処理対象の HTML
      * @return string 属性剥がし済みのクリーンな HTML
      */
     public function process(string $html): string
     {
         $isFullDocument = (bool) preg_match('/<body[\s>]/i', $html);
 
-        $doc = new \DOMDocument();
+        $doc = new DOMDocument();
         if ($isFullDocument) {
             @$doc->loadHTML(
                 '<meta charset="UTF-8">' . $html,
@@ -74,7 +76,7 @@ class DomProcessor
         return $this->normalizeWhitespace(trim($output));
     }
 
-    private function removeElements(\DOMDocument $doc): void
+    private function removeElements(DOMDocument $doc): void
     {
         foreach (self::REMOVE_ELEMENTS as $tagName) {
             $elements = $doc->getElementsByTagName($tagName);
@@ -102,20 +104,20 @@ class DomProcessor
         }
 
         // コメントの削除
-        $xpath = new \DOMXPath($doc);
+        $xpath = new DOMXPath($doc);
         $comments = $xpath->query('//comment()');
         foreach ($comments as $comment) {
             $comment->parentNode?->removeChild($comment);
         }
     }
 
-    private function stripAttributes(\DOMDocument $doc): void
+    private function stripAttributes(DOMDocument $doc): void
     {
-        $xpath = new \DOMXPath($doc);
+        $xpath = new DOMXPath($doc);
         $allElements = $xpath->query('//*');
 
         foreach ($allElements as $element) {
-            if (!$element instanceof \DOMElement) {
+            if (!$element instanceof DOMElement) {
                 continue;
             }
 
@@ -150,16 +152,16 @@ class DomProcessor
         }
     }
 
-    private function removeEmptyElements(\DOMDocument $doc): void
+    private function removeEmptyElements(DOMDocument $doc): void
     {
         $changed = true;
         while ($changed) {
             $changed = false;
-            $xpath = new \DOMXPath($doc);
+            $xpath = new DOMXPath($doc);
             $allElements = $xpath->query('//*');
 
             foreach ($allElements as $element) {
-                if (!$element instanceof \DOMElement) {
+                if (!$element instanceof DOMElement) {
                     continue;
                 }
 
@@ -185,7 +187,6 @@ class DomProcessor
     private function normalizeWhitespace(string $html): string
     {
         $html = preg_replace("/\n{3,}/", "\n\n", $html);
-        $html = preg_replace("/[ \t]+\n/", "\n", $html);
-        return $html;
+        return preg_replace("/[ \t]+\n/", "\n", $html);
     }
 }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace LiteStrip\Processor;
 
+use DOMDocument;
+
 class ScriptAnalyzer
 {
     /** @var list<string> fetch() / axios.get() 等の検出パターン */
@@ -27,7 +29,7 @@ class ScriptAnalyzer
     public function extractScriptSources(string $html): array
     {
         $sources = [];
-        $doc = new \DOMDocument();
+        $doc = new DOMDocument();
         @$doc->loadHTML(
             '<?xml encoding="UTF-8">' . $html,
             LIBXML_NOERROR | LIBXML_NOWARNING
@@ -53,7 +55,7 @@ class ScriptAnalyzer
     {
         $endpoints = [];
 
-        $doc = new \DOMDocument();
+        $doc = new DOMDocument();
         @$doc->loadHTML(
             '<?xml encoding="UTF-8">' . $html,
             LIBXML_NOERROR | LIBXML_NOWARNING
@@ -104,7 +106,7 @@ class ScriptAnalyzer
     private function cleanTemplateUrl(string $url): string
     {
         // ${...} を空文字に置換
-        $cleaned = preg_replace('/\$\{[^}]*\}/', '', $url);
+        $cleaned = preg_replace('/\$\{[^}]*}/', '', $url);
 
         // クエリパラメータの値が空になった部分を整理
         // `?page=&sort=` → `?` → 不要なクエリを除去

@@ -18,23 +18,26 @@ use LiteStrip\Processor\ScriptAnalyzer;
 use InvalidArgumentException;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Message\Response;
+use React\Promise\PromiseInterface;
+use RuntimeException;
+use Throwable;
 
-class RequestHandler
+readonly class RequestHandler
 {
     public function __construct(
-        private readonly UrlValidator $urlValidator,
-        private readonly HtmlFetcher $htmlFetcher,
-        private readonly ?SpaRenderer $spaRenderer,
-        private readonly ScriptAnalyzer $scriptAnalyzer,
-        private readonly ApiFollower $apiFollower,
-        private readonly ContentExtractor $contentExtractor,
-        private readonly DomProcessor $domProcessor,
-        private readonly HtmlFormatter $htmlFormatter,
-        private readonly JsonFormatter $jsonFormatter,
-        private readonly MarkdownFormatter $markdownFormatter,
+        private UrlValidator      $urlValidator,
+        private HtmlFetcher       $htmlFetcher,
+        private ?SpaRenderer      $spaRenderer,
+        private ScriptAnalyzer    $scriptAnalyzer,
+        private ApiFollower       $apiFollower,
+        private ContentExtractor  $contentExtractor,
+        private DomProcessor      $domProcessor,
+        private HtmlFormatter     $htmlFormatter,
+        private JsonFormatter     $jsonFormatter,
+        private MarkdownFormatter $markdownFormatter,
     ) {}
 
-    public function handle(ServerRequestInterface $request): Response|\React\Promise\PromiseInterface
+    public function handle(ServerRequestInterface $request): Response|PromiseInterface
     {
         $method = $request->getMethod();
         $path = $request->getUri()->getPath();
@@ -57,18 +60,18 @@ class RequestHandler
 
         try {
             $options = $this->parseOptions($request);
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             return $this->cors($this->errorResponse(400, 'INVALID_PARAMETER', $e->getMessage()));
         }
 
         $result = $this->processUrl($options);
-        if ($result instanceof \React\Promise\PromiseInterface) {
+        if ($result instanceof PromiseInterface) {
             return $result;
         }
         return $this->cors($result);
     }
 
-    private function processUrl(array $options): Response|\React\Promise\PromiseInterface
+    private function processUrl(array $options): Response|PromiseInterface
     {
         $url = $options['url'];
         $format = $options['format'];
@@ -83,9 +86,9 @@ class RequestHandler
         // 1. URL 検証
         try {
             $this->urlValidator->validate($url);
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             return $this->errorResponse(400, 'INVALID_URL', $e->getMessage());
-        } catch (\RuntimeException $e) {
+        } catch (RuntimeException $e) {
             return $this->errorResponse(403, 'BLOCKED_URL', $e->getMessage());
         }
 
@@ -95,11 +98,11 @@ class RequestHandler
         }
         if ($isSpa && $this->spaRenderer) {
             return $this->spaRenderer->renderAsync($url, $timeout)->then(
-                function (array $fetchResult) use ($url, $format, $followApis, $isFull, $timeout, $maxApis, $startTime) {
+                function (array $fetchResult) use ($url, $format, $followApis, $isFull, $maxApis, $startTime) {
                     $fetchResult['contentType'] = 'text/html';
-                    return $this->cors($this->buildResponse($url, $format, $followApis, $isFull, $timeout, $maxApis, $startTime, $fetchResult));
+                    return $this->cors($this->buildResponse($url, $format, $followApis, $isFull, $maxApis, $startTime, $fetchResult));
                 },
-                function (\Throwable $e) {
+                function (Throwable $e) {
                     $msg = $e->getMessage();
                     if (str_contains(strtolower($msg), 'queue is full')) {
                         return $this->cors($this->errorResponse(503, 'SPA_QUEUE_FULL', $msg));
@@ -114,7 +117,7 @@ class RequestHandler
 
         try {
             $fetchResult = $this->htmlFetcher->fetch($url, $timeout);
-        } catch (\RuntimeException $e) {
+        } catch (RuntimeException $e) {
             $msg = $e->getMessage();
             if (str_contains(strtolower($msg), 'timeout') || str_contains(strtolower($msg), 'timed out')) {
                 return $this->errorResponse(504, 'TIMEOUT', 'Upstream request timed out');
@@ -125,17 +128,16 @@ class RequestHandler
             return $this->errorResponse(502, 'FETCH_FAILED', $msg);
         }
 
-        return $this->buildResponse($url, $format, $followApis, $isFull, $timeout, $maxApis, $startTime, $fetchResult);
+        return $this->buildResponse($url, $format, $followApis, $isFull, $maxApis, $startTime, $fetchResult);
     }
 
-    private function buildResponse(string $url, string $format, bool $followApis, bool $isFull, int $timeout, int $maxApis, int $startTime, array $fetchResult): Response
+    private function buildResponse(string $url, string $format, bool $followApis, bool $isFull, int $maxApis, int $startTime, array $fetchResult): Response
     {
         $html = $fetchResult['html'];
         $finalUrl = $fetchResult['finalUrl'];
         $originalSize = strlen($html);
         $fetchTimeMs = (int) ((hrtime(true) - $startTime) / 1_000_000);
 
-        // Script 解析 + API 追従
         $apiResult = ['apiData' => [], 'failedApis' => [], 'detectedApis' => []];
         if ($followApis) {
             $endpoints = $this->scriptAnalyzer->extractFromHtml($html);
@@ -151,7 +153,7 @@ class RequestHandler
                     $jsCode = $this->htmlFetcher->fetchText($resolvedSrc);
                     $found = $this->scriptAnalyzer->extractFromCode($jsCode);
                     $endpoints = array_merge($endpoints, $found);
-                } catch (\Throwable $e) {
+                } catch (Throwable $e) {
                     error_log('[LiteStrip] External JS fetch failed: ' . $resolvedSrc . ' — ' . $e->getMessage());
                 }
             }
@@ -232,6 +234,7 @@ class RequestHandler
 
     /**
      * @return array{url: string, format: string, followApis: bool, isFull: bool, isSpa: bool, timeout: int, maxApis: int}
+     * @throws InvalidArgumentException
      */
     private function parseOptions(ServerRequestInterface $request): array
     {
@@ -301,7 +304,7 @@ GET /?url=https://example.com&amp;format=markdown</pre>
 <h2>Parameters</h2>
 <ul>
 <li><code>url</code> (required) — Target URL</li>
-<li><code>format</code> — html (default), json, markdown</li>
+<li><code>format</code> — json (default), html, markdown</li>
 <li><code>follow_apis</code> — true (default), false</li>
 <li><code>is_full</code> — false (default), true (include head metadata)</li>
 <li><code>is_spa</code> — false (default), true (render via headless Chromium, requires ENABLE_SPA=true)</li>
