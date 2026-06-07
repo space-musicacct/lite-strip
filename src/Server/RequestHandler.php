@@ -91,6 +91,7 @@ readonly class RequestHandler
         $followApis = $options['followApis'];
         $isFull = $options['isFull'];
         $isSpa = $options['isSpa'];
+        $timezone = $options['timezone'];
         $timeout = $options['timeout'];
         $maxApis = $options['maxApis'];
 
@@ -113,9 +114,9 @@ readonly class RequestHandler
         }
         if ($isSpa && $this->spaRenderer) {
             return $this->spaRenderer->renderAsync($url, $timeout)->then(
-                function (array $fetchResult) use ($url, $format, $followApis, $isFull, $maxApis, $startTime) {
+                function (array $fetchResult) use ($url, $format, $followApis, $isFull, $maxApis, $timezone, $startTime) {
                     $fetchResult['contentType'] = 'text/html';
-                    return $this->cors($this->buildResponse($url, $format, $followApis, $isFull, $maxApis, $startTime, $fetchResult));
+                    return $this->cors($this->buildResponse($url, $format, $followApis, $isFull, $maxApis, $timezone, $startTime, $fetchResult));
                 },
                 function (Throwable $e) {
                     $msg = $e->getMessage();
@@ -145,10 +146,10 @@ readonly class RequestHandler
             return $this->errorResponse(500, 'INTERNAL_ERROR', 'Fetch failed: ' . $e->getMessage());
         }
 
-        return $this->buildResponse($url, $format, $followApis, $isFull, $maxApis, $startTime, $fetchResult);
+        return $this->buildResponse($url, $format, $followApis, $isFull, $maxApis, $timezone, $startTime, $fetchResult);
     }
 
-    private function buildResponse(string $url, string $format, bool $followApis, bool $isFull, int $maxApis, int $startTime, array $fetchResult): Response
+    private function buildResponse(string $url, string $format, bool $followApis, bool $isFull, int $maxApis, ?string $timezone, int $startTime, array $fetchResult): Response
     {
         $html = $fetchResult['html'];
         $finalUrl = $fetchResult['finalUrl'];
@@ -205,7 +206,7 @@ readonly class RequestHandler
         };
 
         $body = match ($format) {
-            'json' => $this->buildJsonBody($url, $finalUrl, $title, $cleanHtml, $meta, $apiResult, $fetchTimeMs, $processTimeMs, $totalTimeMs, $originalSize),
+            'json' => $this->buildJsonBody($url, $finalUrl, $title, $cleanHtml, $meta, $apiResult, $timezone, $fetchTimeMs, $processTimeMs, $totalTimeMs, $originalSize),
             'markdown' => $this->markdownFormatter->format($cleanHtml, $apiResult['apiData']),
             default => $this->htmlFormatter->format($url, $cleanHtml, $apiResult['apiData'], $apiResult['failedApis']),
         };
@@ -220,8 +221,11 @@ readonly class RequestHandler
         return new Response(200, $commonHeaders, $body);
     }
 
-    private function buildJsonBody(string $url, string $finalUrl, string $title, string $cleanHtml, array $meta, array $apiResult, int $fetchTimeMs, int $processTimeMs, int $totalTimeMs, int $originalSize): string
+    private function buildJsonBody(string $url, string $finalUrl, string $title, string $cleanHtml, array $meta, array $apiResult, ?string $timezone, int $fetchTimeMs, int $processTimeMs, int $totalTimeMs, int $originalSize): string
     {
+        $tz = $timezone ? new \DateTimeZone($timezone) : null;
+        $fetchedAt = new \DateTimeImmutable('now', $tz);
+
         $jsonData = [
             'url' => $url,
             'finalUrl' => $finalUrl,
@@ -234,7 +238,7 @@ readonly class RequestHandler
             'failedApis' => $apiResult['failedApis'],
             'warnings' => [],
             'stats' => [
-                'fetchedAt' => date('c'),
+                'fetchedAt' => $fetchedAt->format('c'),
                 'fetchTimeMs' => $fetchTimeMs,
                 'processTimeMs' => $processTimeMs,
                 'totalTimeMs' => $totalTimeMs,
@@ -251,7 +255,7 @@ readonly class RequestHandler
     }
 
     /**
-     * @return array{url: string, format: string, followApis: bool, isFull: bool, isSpa: bool, timeout: int, maxApis: int}
+     * @return array{url: string, format: string, followApis: bool, isFull: bool, isSpa: bool, timezone: ?string, timeout: int, maxApis: int}
      * @throws InvalidArgumentException
      */
     private function parseOptions(ServerRequestInterface $request): array
@@ -286,6 +290,15 @@ readonly class RequestHandler
         $isFull = filter_var($params['is_full'] ?? false, FILTER_VALIDATE_BOOLEAN);
         $isSpa = filter_var($params['is_spa'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
+        $timezone = $params['timezone'] ?? null;
+        if ($timezone !== null) {
+            try {
+                new \DateTimeZone($timezone);
+            } catch (\DateInvalidTimeZoneException) {
+                throw new InvalidArgumentException("Invalid timezone: $timezone");
+            }
+        }
+
         $timeout = (int) ($params['timeout'] ?? ServerConfig::DEFAULT_TIMEOUT);
         if ($timeout < 1 || $timeout > ServerConfig::MAX_TIMEOUT) {
             throw new InvalidArgumentException('timeout must be between 1 and ' . ServerConfig::MAX_TIMEOUT);
@@ -296,7 +309,7 @@ readonly class RequestHandler
             throw new InvalidArgumentException('max_apis must be between 1 and ' . ServerConfig::MAX_MAX_APIS);
         }
 
-        return compact('url', 'format', 'followApis', 'isFull', 'isSpa', 'timeout', 'maxApis');
+        return compact('url', 'format', 'followApis', 'isFull', 'isSpa', 'timezone', 'timeout', 'maxApis');
     }
 
     private function health(): Response
@@ -326,6 +339,7 @@ GET /?url=https://example.com&amp;format=markdown</pre>
 <li><code>follow_apis</code> — true (default), false</li>
 <li><code>is_full</code> — false (default), true (include head metadata)</li>
 <li><code>is_spa</code> — false (default), true (render via headless Chromium, requires ENABLE_SPA=true)</li>
+<li><code>timezone</code> — IANA timezone for fetchedAt (e.g. Asia/Tokyo, UTC)</li>
 <li><code>timeout</code> — 1-30 (default: 15)</li>
 <li><code>max_apis</code> — 1-10 (default: 5)</li>
 </ul>
