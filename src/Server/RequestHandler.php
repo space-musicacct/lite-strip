@@ -120,7 +120,11 @@ readonly class RequestHandler
             return $this->spaRenderer->renderAsync($url, $timeout)->then(
                 function (array $fetchResult) use ($url, $format, $followApis, $isFull, $maxApis, $timezone, $startTime) {
                     $fetchResult['contentType'] = 'text/html';
-                    return $this->cors($this->buildResponse($url, $format, $followApis, $isFull, $maxApis, $timezone, $startTime, $fetchResult));
+                    try {
+                        return $this->cors($this->buildResponse($url, $format, $followApis, $isFull, $maxApis, $timezone, $startTime, $fetchResult));
+                    } catch (DateInvalidTimeZoneException|DateMalformedStringException $e) {
+                        return $this->cors($this->errorResponse(500, 'INTERNAL_ERROR', 'Date processing failed: ' . $e->getMessage()));
+                    }
                 },
                 function (Throwable $e) {
                     $msg = $e->getMessage();
@@ -150,7 +154,11 @@ readonly class RequestHandler
             return $this->errorResponse(500, 'INTERNAL_ERROR', 'Fetch failed: ' . $e->getMessage());
         }
 
-        return $this->buildResponse($url, $format, $followApis, $isFull, $maxApis, $timezone, $startTime, $fetchResult);
+        try {
+            return $this->buildResponse($url, $format, $followApis, $isFull, $maxApis, $timezone, $startTime, $fetchResult);
+        } catch (DateInvalidTimeZoneException|DateMalformedStringException $e) {
+            return $this->errorResponse(500, 'INTERNAL_ERROR', 'Date processing failed: ' . $e->getMessage());
+        }
     }
 
     /**
