@@ -47,6 +47,12 @@ class HtmlFormatter
         return $output;
     }
 
+    /**
+     * Formats a single successful API response as an HTML section.
+     *
+     * @param array $api API response data containing url, status, and data
+     * @return string HTML section element with the API endpoint URL, status, and response body
+     */
     private function formatApiSection(array $api): string
     {
         $apiUrl = htmlspecialchars($api['url'], ENT_QUOTES, 'UTF-8');
@@ -60,6 +66,12 @@ class HtmlFormatter
         return $output;
     }
 
+    /**
+     * Formats a single failed API response as an HTML section with error details.
+     *
+     * @param array $api Failed API data containing url, status, statusMessage, error, and optional data
+     * @return string HTML section element with the API endpoint URL, status, error code, and optional response body
+     */
     private function formatFailedApiSection(array $api): string
     {
         $apiUrl = htmlspecialchars($api['url'], ENT_QUOTES, 'UTF-8');
@@ -79,6 +91,12 @@ class HtmlFormatter
         return $output;
     }
 
+    /**
+     * Converts API response data to an HTML-escaped string for display.
+     *
+     * @param mixed $data Response data (null, string, array, or object)
+     * @return string HTML-escaped string representation of the data
+     */
     private function formatData(mixed $data): string
     {
         if ($data === null) {

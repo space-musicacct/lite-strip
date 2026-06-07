@@ -85,6 +85,12 @@ class DomProcessor
         return $this->normalizeWhitespace(trim($output));
     }
 
+    /**
+     * Removes noise elements from the DOM (scripts, styles, noscript, SVG, stylesheet links, and comments).
+     *
+     * @param DOMDocument $doc The DOM document to modify in place
+     * @return void
+     */
     private function removeElements(DOMDocument $doc): void
     {
         foreach (self::REMOVE_ELEMENTS as $tagName) {
@@ -120,6 +126,12 @@ class DomProcessor
         }
     }
 
+    /**
+     * Strips non-allowed attributes from all elements and applies safety transforms.
+     *
+     * @param DOMDocument $doc The DOM document to modify in place
+     * @return void
+     */
     private function stripAttributes(DOMDocument $doc): void
     {
         $xpath = new DOMXPath($doc);
@@ -161,6 +173,12 @@ class DomProcessor
         }
     }
 
+    /**
+     * Recursively removes empty elements from the DOM, preserving void and semantic elements.
+     *
+     * @param DOMDocument $doc The DOM document to modify in place
+     * @return void
+     */
     private function removeEmptyElements(DOMDocument $doc): void
     {
         $changed = true;
@@ -193,6 +211,12 @@ class DomProcessor
         }
     }
 
+    /**
+     * Normalizes excessive whitespace in the output HTML.
+     *
+     * @param string $html HTML string to normalize
+     * @return string HTML with collapsed blank lines and trimmed trailing spaces
+     */
     private function normalizeWhitespace(string $html): string
     {
         $html = preg_replace("/\n{3,}/", "\n\n", $html);

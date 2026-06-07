@@ -116,6 +116,9 @@ class ScriptAnalyzer
      * Strips template literal interpolations (${...}) and extracts the base URL.
      *
      * Example: `/api/v1/data/?page=${page}&sort=${sort}` becomes `/api/v1/data/`
+     *
+     * @param string $url URL string potentially containing template literal expressions
+     * @return string Cleaned URL with interpolations removed and empty query parameters stripped
      */
     private function cleanTemplateUrl(string $url): string
     {
@@ -153,6 +156,12 @@ class ScriptAnalyzer
         return $result;
     }
 
+    /**
+     * Determines whether a URL should be excluded from API endpoint results.
+     *
+     * @param string $url URL to check against the exclusion patterns
+     * @return bool True if the URL matches any excluded path pattern
+     */
     private function isExcluded(string $url): bool
     {
         $lower = strtolower($url);

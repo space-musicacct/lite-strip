@@ -47,6 +47,9 @@ final class BlockedNetworks
 
     /**
      * Checks an IPv4 address against the CIDR blocklist.
+     *
+     * @param string $ip IPv4 address to check
+     * @return bool True if the IP matches any blocked CIDR range
      */
     private static function matchesIpv4CidrList(string $ip): bool
     {
@@ -75,6 +78,9 @@ final class BlockedNetworks
     /**
      * Checks an IPv6 address against known blocked prefixes.
      * Blocks ::1 (loopback), fc00::/7 (ULA), and fe80::/10 (link-local).
+     *
+     * @param string $ip IPv6 address to check
+     * @return bool True if the IP belongs to a blocked IPv6 range
      */
     private static function isBlockedIpv6(string $ip): bool
     {

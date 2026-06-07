@@ -11,8 +11,12 @@ use League\HTMLToMarkdown\HtmlConverter;
  */
 class MarkdownFormatter
 {
+    /** @var HtmlConverter HTML-to-Markdown converter instance */
     private HtmlConverter $converter;
 
+    /**
+     * Creates a new Markdown formatter with a preconfigured HTML-to-Markdown converter.
+     */
     public function __construct()
     {
         $this->converter = new HtmlConverter([

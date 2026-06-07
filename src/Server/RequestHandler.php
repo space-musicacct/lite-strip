@@ -35,6 +35,20 @@ use Throwable;
  */
 readonly class RequestHandler
 {
+    /**
+     * Creates a new request handler with all required processing components.
+     *
+     * @param UrlValidator $urlValidator Validates URLs for safety and resolves relative URLs
+     * @param HtmlFetcher $htmlFetcher Fetches HTML content from remote URLs
+     * @param SpaRenderer|null $spaRenderer Renders JavaScript-heavy pages via headless Chromium, or null if SPA mode is disabled
+     * @param ScriptAnalyzer $scriptAnalyzer Detects API endpoint URLs in JavaScript code
+     * @param ApiFollower $apiFollower Follows and fetches discovered API endpoints
+     * @param ContentExtractor $contentExtractor Extracts the relevant portion of an HTML document
+     * @param DomProcessor $domProcessor Strips non-semantic attributes and removes noise elements
+     * @param HtmlFormatter $htmlFormatter Formats extraction results as clean HTML
+     * @param JsonFormatter $jsonFormatter Formats extraction results as structured JSON
+     * @param MarkdownFormatter $markdownFormatter Formats extraction results as Markdown
+     */
     public function __construct(
         private UrlValidator      $urlValidator,
         private HtmlFetcher       $htmlFetcher,
@@ -88,6 +102,12 @@ readonly class RequestHandler
         return $this->cors($result);
     }
 
+    /**
+     * Executes the full URL processing pipeline: validation, fetch, script analysis, API following, and formatting.
+     *
+     * @param array{url: string, format: string, followApis: bool, isFull: bool, isSpa: bool, timezone: ?string, timeout: int, maxApis: int} $options Parsed request options
+     * @return Response|PromiseInterface HTTP response or a promise that resolves to one (for SPA requests)
+     */
     private function processUrl(array $options): Response|PromiseInterface
     {
         $url = $options['url'];
@@ -162,8 +182,19 @@ readonly class RequestHandler
     }
 
     /**
-     * @throws DateInvalidTimeZoneException
-     * @throws DateMalformedStringException
+     * Builds the final HTTP response from fetched HTML by running extraction, processing, and formatting.
+     *
+     * @param string $url Original request URL
+     * @param string $format Output format (html, json, or markdown)
+     * @param bool $followApis Whether to discover and follow API endpoints
+     * @param bool $isFull Whether to include head metadata in output
+     * @param int $maxApis Maximum number of API endpoints to follow
+     * @param string|null $timezone IANA timezone for the fetchedAt timestamp, or null for server default
+     * @param int $startTime High-resolution start time from hrtime(true) for timing statistics
+     * @param array{html: string, finalUrl: string, status: int, contentType: string} $fetchResult Raw fetch result from HtmlFetcher or SpaRenderer
+     * @return Response Formatted HTTP response with content and timing headers
+     * @throws DateInvalidTimeZoneException If the provided timezone identifier is invalid
+     * @throws DateMalformedStringException If date construction fails
      */
     private function buildResponse(string $url, string $format, bool $followApis, bool $isFull, int $maxApis, ?string $timezone, int $startTime, array $fetchResult): Response
     {
@@ -238,8 +269,22 @@ readonly class RequestHandler
     }
 
     /**
-     * @throws DateInvalidTimeZoneException
-     * @throws DateMalformedStringException
+     * Constructs the JSON response body containing all extraction data and timing statistics.
+     *
+     * @param string $url Original request URL
+     * @param string $finalUrl Final URL after following redirects
+     * @param string $title Extracted page title
+     * @param string $cleanHtml Processed and attribute-stripped HTML content
+     * @param array{description: ?string, language: ?string, ogImage: ?string} $meta Extracted page metadata
+     * @param array{apiData: list<array>, failedApis: list<array>, detectedApis: list<string>} $apiResult API following results
+     * @param string|null $timezone IANA timezone for the fetchedAt timestamp, or null for server default
+     * @param int $fetchTimeMs Time spent fetching the HTML in milliseconds
+     * @param int $processTimeMs Time spent processing the HTML in milliseconds
+     * @param int $totalTimeMs Total elapsed time in milliseconds
+     * @param int $originalSize Original HTML response size in bytes
+     * @return string JSON-encoded response body
+     * @throws DateInvalidTimeZoneException If the provided timezone identifier is invalid
+     * @throws DateMalformedStringException If date construction fails
      */
     private function buildJsonBody(string $url, string $finalUrl, string $title, string $cleanHtml, array $meta, array $apiResult, ?string $timezone, int $fetchTimeMs, int $processTimeMs, int $totalTimeMs, int $originalSize): string
     {
@@ -275,8 +320,11 @@ readonly class RequestHandler
     }
 
     /**
-     * @return array{url: string, format: string, followApis: bool, isFull: bool, isSpa: bool, timezone: ?string, timeout: int, maxApis: int}
-     * @throws InvalidArgumentException
+     * Parses and validates request parameters from query string (GET) or JSON body (POST).
+     *
+     * @param ServerRequestInterface $request Incoming HTTP request
+     * @return array{url: string, format: string, followApis: bool, isFull: bool, isSpa: bool, timezone: ?string, timeout: int, maxApis: int} Validated request options
+     * @throws InvalidArgumentException If any parameter is missing, invalid, or out of range
      */
     private function parseOptions(ServerRequestInterface $request): array
     {
@@ -332,6 +380,11 @@ readonly class RequestHandler
         return compact('url', 'format', 'followApis', 'isFull', 'isSpa', 'timezone', 'timeout', 'maxApis');
     }
 
+    /**
+     * Returns a JSON health check response with status and version.
+     *
+     * @return Response JSON response with ok status and application version
+     */
     private function health(): Response
     {
         return new Response(200, [
@@ -339,6 +392,11 @@ readonly class RequestHandler
         ], json_encode(['status' => 'ok', 'version' => ServerConfig::VERSION]));
     }
 
+    /**
+     * Returns an HTML documentation page describing available API parameters and usage.
+     *
+     * @return Response HTML response with API documentation
+     */
     private function docs(): Response
     {
         $html = <<<'HTML'
@@ -371,6 +429,14 @@ HTML;
         return new Response(200, ['Content-Type' => 'text/html; charset=utf-8'], $html);
     }
 
+    /**
+     * Builds a JSON error response with the given HTTP status code and error details.
+     *
+     * @param int $status HTTP status code
+     * @param string $code Machine-readable error code (e.g. BLOCKED_URL, TIMEOUT)
+     * @param string $message Human-readable error description
+     * @return Response JSON error response
+     */
     private function errorResponse(int $status, string $code, string $message): Response
     {
         return new Response($status, [
@@ -378,6 +444,12 @@ HTML;
         ], $this->jsonFormatter->formatError($code, $message));
     }
 
+    /**
+     * Adds CORS and security headers to the response.
+     *
+     * @param Response $response The response to augment with CORS headers
+     * @return Response Response with Access-Control-*, X-Content-Type-Options, and Referrer-Policy headers
+     */
     private function cors(Response $response): Response
     {
         return $response
@@ -388,6 +460,12 @@ HTML;
             ->withHeader('Referrer-Policy', 'no-referrer');
     }
 
+    /**
+     * Extracts the page title from the HTML <title> tag.
+     *
+     * @param string $html Full HTML document string
+     * @return string Decoded page title, or empty string if no title tag is found
+     */
     private function extractTitle(string $html): string
     {
         if (preg_match('/<title[^>]*>([^<]+)<\/title>/i', $html, $m)) {
@@ -396,6 +474,12 @@ HTML;
         return '';
     }
 
+    /**
+     * Extracts metadata (description, language, og:image) from the HTML document.
+     *
+     * @param string $html Full HTML document string
+     * @return array{description: ?string, language: ?string, ogImage: ?string} Extracted metadata values, null if not found
+     */
     private function extractMeta(string $html): array
     {
         $meta = ['description' => null, 'language' => null, 'ogImage' => null];

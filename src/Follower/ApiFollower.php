@@ -18,6 +18,12 @@ use Throwable;
  */
 readonly class ApiFollower
 {
+    /**
+     * Creates a new API follower with the given fetcher and URL validator.
+     *
+     * @param HtmlFetcher $fetcher HTTP client used to fetch API endpoint responses
+     * @param UrlValidator $urlValidator Validator for URL safety and resolution
+     */
     public function __construct(
         private HtmlFetcher  $fetcher,
         private UrlValidator $urlValidator,
@@ -117,6 +123,9 @@ readonly class ApiFollower
 
     /**
      * Classifies an exception message into a standardized error code.
+     *
+     * @param string $message Exception message to classify
+     * @return string Standardized error code (TIMEOUT, BLOCKED_URL, RESPONSE_TOO_LARGE, or FETCH_FAILED)
      */
     private function classifyError(string $message): string
     {

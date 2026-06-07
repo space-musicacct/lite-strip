@@ -22,6 +22,11 @@ use function React\Async\await;
  */
 readonly class UrlValidator
 {
+    /**
+     * Creates a new URL validator with the given DNS resolver.
+     *
+     * @param ResolverInterface $dnsResolver DNS resolver used for hostname-to-IP resolution
+     */
     public function __construct(
         private ResolverInterface $dnsResolver
     ) {}

@@ -20,8 +20,14 @@ use function React\Async\await;
  */
 class HtmlFetcher
 {
+    /** @var Browser ReactPHP HTTP client configured with timeout, redirect, and header defaults */
     private Browser $browser;
 
+    /**
+     * Creates a new HTML fetcher with preconfigured browser settings.
+     *
+     * @param Browser $browser ReactPHP HTTP browser instance to configure and use for requests
+     */
     public function __construct(Browser $browser)
     {
         $this->browser = $browser
@@ -124,6 +130,10 @@ class HtmlFetcher
 
     /**
      * Resolves a redirect Location header against the current URL.
+     *
+     * @param string $baseUrl The URL that issued the redirect
+     * @param string $location The Location header value (absolute or relative)
+     * @return string The resolved absolute URL
      */
     private function resolveRedirect(string $baseUrl, string $location): string
     {

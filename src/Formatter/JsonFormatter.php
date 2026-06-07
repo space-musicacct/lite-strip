@@ -10,6 +10,8 @@ namespace LiteStrip\Formatter;
 class JsonFormatter
 {
     /**
+     * Builds a JSON-encoded success response from the extraction result data.
+     *
      * @param array{
      *     url: string,
      *     finalUrl: string,

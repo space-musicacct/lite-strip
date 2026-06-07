@@ -21,18 +21,30 @@ use function React\Promise\reject;
  */
 class SpaRenderer
 {
+    /** @var string Hostname or IP address of the headless Chromium instance */
     private string $chromiumHost;
+
+    /** @var int Port number of the Chromium DevTools Protocol endpoint */
     private int $chromiumPort;
+
+    /** @var string Absolute file path to the spa-worker.php child process script */
     private string $workerScript;
 
+    /** @var bool Whether a render job is currently being processed */
     private bool $processing = false;
 
-    /** @var list<array{url: string, timeout: int, deferred: Deferred}> */
+    /** @var list<array{url: string, timeout: int, deferred: Deferred}> Pending render requests awaiting processing */
     private array $queue = [];
 
     /** @var int Maximum number of queued SPA render requests */
     private const int MAX_QUEUE_SIZE = 10;
 
+    /**
+     * Creates a new SPA renderer targeting the specified Chromium instance.
+     *
+     * @param string $chromiumHost Hostname or IP address of the headless Chromium instance
+     * @param int $chromiumPort Port number of the Chromium DevTools Protocol endpoint
+     */
     public function __construct(
         string $chromiumHost = 'chromium',
         int $chromiumPort = 9222
@@ -69,6 +81,8 @@ class SpaRenderer
 
     /**
      * Processes the next item in the queue. Only one render runs at a time.
+     *
+     * @return void
      */
     private function processNext(): void
     {
