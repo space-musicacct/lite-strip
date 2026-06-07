@@ -204,7 +204,7 @@ class RequestHandler
     }
 
     /**
-     * @return array{url: string, format: string, follow_apis: bool, extract_main: bool, timeout: int, max_apis: int}
+     * @return array{url: string, format: string, followApis: bool, extractMain: bool, timeout: int, maxApis: int}
      */
     private function parseOptions(ServerRequestInterface $request): array
     {
@@ -235,7 +235,7 @@ class RequestHandler
         }
 
         $followApis = filter_var($params['follow_apis'] ?? true, FILTER_VALIDATE_BOOLEAN);
-        $extractMain = filter_var($params['extract_main'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $extractMain = !filter_var($params['more'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         $timeout = (int) ($params['timeout'] ?? ServerConfig::DEFAULT_TIMEOUT);
         if ($timeout < 1 || $timeout > ServerConfig::MAX_TIMEOUT) {
@@ -275,7 +275,7 @@ GET /?url=https://example.com&amp;format=markdown</pre>
 <li><code>url</code> (required) — Target URL</li>
 <li><code>format</code> — html (default), json, markdown</li>
 <li><code>follow_apis</code> — true (default), false</li>
-<li><code>extract_main</code> — true (default), false</li>
+<li><code>more</code> — false (default), true (include head/header/footer)</li>
 <li><code>timeout</code> — 1-30 (default: 15)</li>
 <li><code>max_apis</code> — 1-10 (default: 5)</li>
 </ul>
