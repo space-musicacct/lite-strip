@@ -27,8 +27,9 @@ class HtmlFetcher
      * Creates a new HTML fetcher with preconfigured browser settings.
      *
      * @param Browser $browser ReactPHP HTTP browser instance to configure and use for requests
+     * @param UrlValidator|null $urlValidator URL validator for SSRF protection on redirects
      */
-    public function __construct(Browser $browser)
+    public function __construct(Browser $browser, private readonly ?UrlValidator $urlValidator = null)
     {
         $this->browser = $browser
             ->withTimeout(ServerConfig::DEFAULT_TIMEOUT)
@@ -69,6 +70,7 @@ class HtmlFetcher
                 }
 
                 $finalUrl = $this->resolveRedirect($finalUrl, $location);
+                $this->urlValidator?->validate($finalUrl);
                 continue;
             }
 

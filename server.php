@@ -28,7 +28,7 @@ $dnsResolver = new React\Dns\Resolver\Factory()->create('8.8.8.8');
 $browser = new React\Http\Browser();
 
 $urlValidator = new UrlValidator($dnsResolver);
-$htmlFetcher = new HtmlFetcher($browser);
+$htmlFetcher = new HtmlFetcher($browser, $urlValidator);
 
 $enableSpa = filter_var(getenv('ENABLE_SPA') ?: ServerConfig::ENABLE_SPA_DEFAULT, FILTER_VALIDATE_BOOLEAN);
 $chromiumHost = getenv('CHROMIUM_HOST') ?: null;

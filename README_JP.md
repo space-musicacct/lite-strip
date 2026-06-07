@@ -12,7 +12,7 @@ URL を渡すと、スタイリング属性を除去したクリーンな構造 
 - **複数出力形式** — JSON (デフォルト)、HTML、Markdown
 - **SPA レンダリング** — ヘッドレス Chromium による JavaScript 実行済み HTML の取得 (`is_spa=true`、オプション)
 - **SSRF 保護** — DNS 解決 + IP ブロックリスト + リダイレクト検証を内蔵
-- **PHP 完結** — Node.js も Python も不要、PHP + ReactPHP のみ
+- **PHP 完結** — 通常の抽出処理は PHP + ReactPHP のみで動作。SPA レンダリングを有効化した場合のみ、別コンテナの headless Chromium を使用
 - **Docker 対応** — `docker compose up -d --build` ですぐ動く
 
 ## 公開インスタンス

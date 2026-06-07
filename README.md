@@ -14,7 +14,7 @@ LiteStrip takes a URL and returns clean, structured HTML with all styling attrib
 - **Multiple Output Formats** — JSON (default), HTML, Markdown
 - **SPA Rendering** — Optional headless Chromium for JavaScript-rendered pages (`is_spa=true`)
 - **SSRF Protection** — DNS resolution + IP blocklist + redirect validation built-in
-- **PHP Complete** — No Node.js, no Python, just PHP + ReactPHP
+- **PHP Complete** — Core extraction runs on PHP + ReactPHP only. Optional SPA rendering uses a separate headless Chromium container
 - **Docker Ready** — Single `docker compose up -d --build` to run
 
 ## Public Instance
