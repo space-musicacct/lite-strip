@@ -28,18 +28,18 @@ try {
     $ip = gethostbyname($chromiumHost);
 
     $json = @file_get_contents(
-        "http://{$ip}:{$chromiumPort}/json/version",
+        "http://$ip:$chromiumPort/json/version",
         false,
         stream_context_create(['http' => ['timeout' => 5]])
     );
 
     if ($json === false) {
-        throw new \RuntimeException("Cannot connect to Chromium");
+        throw new RuntimeException("Cannot connect to Chromium");
     }
 
     $data = json_decode($json, true);
     $path = parse_url($data['webSocketDebuggerUrl'] ?? '', PHP_URL_PATH);
-    $wsUrl = "ws://{$ip}:{$chromiumPort}{$path}";
+    $wsUrl = "ws://$ip:$chromiumPort$path";
 
     $connection = new Connection($wsUrl);
     $connection->connect();
@@ -59,7 +59,7 @@ try {
         'html' => $html ?? '',
         'finalUrl' => $finalUrl ?? $url,
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-} catch (\Throwable $e) {
+} catch (Throwable $e) {
     echo json_encode([
         'ok' => false,
         'error' => $e->getMessage(),
