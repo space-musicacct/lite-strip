@@ -15,14 +15,14 @@ LiteStrip takes a URL and returns clean, structured HTML with all styling attrib
 - **SPA Rendering** — Optional headless Chromium for JavaScript-rendered pages (`is_spa=true`)
 - **SSRF Protection** — DNS resolution + IP blocklist + redirect validation built-in
 - **PHP Complete** — No Node.js, no Python, just PHP + ReactPHP
-- **Docker Ready** — Single `docker compose up` to run
+- **Docker Ready** — Single `docker compose up -d --build` to run
 
 ## Quick Start
 
 ```bash
 git clone https://github.com/space-musicacct/lite-strip.git
 cd lite-strip
-docker compose up --build -d
+docker compose up -d --build
 ```
 
 ```bash

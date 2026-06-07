@@ -13,14 +13,14 @@ URL を渡すと、スタイリング属性を除去したクリーンな構造 
 - **SPA レンダリング** — ヘッドレス Chromium による JavaScript 実行済み HTML の取得 (`is_spa=true`、オプション)
 - **SSRF 保護** — DNS 解決 + IP ブロックリスト + リダイレクト検証を内蔵
 - **PHP 完結** — Node.js も Python も不要、PHP + ReactPHP のみ
-- **Docker 対応** — `docker compose up` ですぐ動く
+- **Docker 対応** — `docker compose up -d --build` ですぐ動く
 
 ## クイックスタート
 
 ```bash
 git clone https://github.com/space-musicacct/lite-strip.git
 cd lite-strip
-docker compose up --build -d
+docker compose up -d --build
 ```
 
 ```bash
