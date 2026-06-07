@@ -191,38 +191,11 @@ readonly class RequestHandler
             default => 'text/html; charset=utf-8',
         };
 
-        if ($format === 'json') {
-            $jsonData = [
-                'url' => $url,
-                'finalUrl' => $finalUrl,
-                'title' => $title,
-                'contentHtml' => $cleanHtml,
-                'contentText' => strip_tags($cleanHtml),
-                'meta' => $meta,
-                'detectedApis' => $apiResult['detectedApis'],
-                'apiData' => $apiResult['apiData'],
-                'failedApis' => $apiResult['failedApis'],
-                'warnings' => [],
-                'stats' => [
-                    'fetchedAt' => date('c'),
-                    'fetchTimeMs' => $fetchTimeMs,
-                    'processTimeMs' => $processTimeMs,
-                    'totalTimeMs' => $totalTimeMs,
-                    'apisDiscovered' => count($apiResult['detectedApis']),
-                    'apisFollowed' => count($apiResult['apiData']) + count($apiResult['failedApis']),
-                    'apisSucceeded' => count($apiResult['apiData']),
-                    'originalSizeBytes' => $originalSize,
-                    'outputSizeBytes' => 0,
-                ],
-            ];
-            $body = $this->jsonFormatter->format($jsonData);
-            $jsonData['stats']['outputSizeBytes'] = strlen($body);
-            $body = $this->jsonFormatter->format($jsonData);
-        } elseif ($format === 'markdown') {
-            $body = $this->markdownFormatter->format($cleanHtml, $apiResult['apiData']);
-        } else {
-            $body = $this->htmlFormatter->format($url, $cleanHtml, $apiResult['apiData'], $apiResult['failedApis']);
-        }
+        $body = match ($format) {
+            'json' => $this->buildJsonBody($url, $finalUrl, $title, $cleanHtml, $meta, $apiResult, $fetchTimeMs, $processTimeMs, $totalTimeMs, $originalSize),
+            'markdown' => $this->markdownFormatter->format($cleanHtml, $apiResult['apiData']),
+            default => $this->htmlFormatter->format($url, $cleanHtml, $apiResult['apiData'], $apiResult['failedApis']),
+        };
 
         $commonHeaders['X-LiteStrip-Output-Size'] = (string) strlen($body);
         $commonHeaders['Content-Type'] = $contentType;
@@ -232,6 +205,36 @@ readonly class RequestHandler
         }
 
         return new Response(200, $commonHeaders, $body);
+    }
+
+    private function buildJsonBody(string $url, string $finalUrl, string $title, string $cleanHtml, array $meta, array $apiResult, int $fetchTimeMs, int $processTimeMs, int $totalTimeMs, int $originalSize): string
+    {
+        $jsonData = [
+            'url' => $url,
+            'finalUrl' => $finalUrl,
+            'title' => $title,
+            'contentHtml' => $cleanHtml,
+            'contentText' => strip_tags($cleanHtml),
+            'meta' => $meta,
+            'detectedApis' => $apiResult['detectedApis'],
+            'apiData' => $apiResult['apiData'],
+            'failedApis' => $apiResult['failedApis'],
+            'warnings' => [],
+            'stats' => [
+                'fetchedAt' => date('c'),
+                'fetchTimeMs' => $fetchTimeMs,
+                'processTimeMs' => $processTimeMs,
+                'totalTimeMs' => $totalTimeMs,
+                'apisDiscovered' => count($apiResult['detectedApis']),
+                'apisFollowed' => count($apiResult['apiData']) + count($apiResult['failedApis']),
+                'apisSucceeded' => count($apiResult['apiData']),
+                'originalSizeBytes' => $originalSize,
+                'outputSizeBytes' => 0,
+            ],
+        ];
+        $body = $this->jsonFormatter->format($jsonData);
+        $jsonData['stats']['outputSizeBytes'] = strlen($body);
+        return $this->jsonFormatter->format($jsonData);
     }
 
     /**
