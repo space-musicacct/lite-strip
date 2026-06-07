@@ -7,9 +7,6 @@ namespace LiteStrip\Follower;
 use LiteStrip\Config\ServerConfig;
 use LiteStrip\Fetcher\HtmlFetcher;
 use LiteStrip\Fetcher\UrlValidator;
-use React\Promise;
-
-use function React\Async\await;
 
 class ApiFollower
 {
@@ -106,26 +103,6 @@ class ApiFollower
             'failedApis' => $failedApis,
             'detectedApis' => $detectedApis,
         ];
-    }
-
-    /**
-     * @return \React\Promise\PromiseInterface<array>
-     */
-    private function fetchEndpoint(string $url): Promise\PromiseInterface
-    {
-        return \React\Async\async(function () use ($url) {
-            $body = $this->fetcher->fetchText($url);
-
-            $data = json_decode($body, true);
-            $isJson = json_last_error() === JSON_ERROR_NONE;
-
-            return [
-                'url' => $url,
-                'status' => 200,
-                'contentType' => $isJson ? 'application/json' : 'text/plain',
-                'data' => $isJson ? $data : $body,
-            ];
-        })();
     }
 
     private function classifyError(string $message): string

@@ -55,11 +55,4 @@ final class AllowedAttributes
         return self::SAFETY_TRANSFORMS[$tag] ?? [];
     }
 
-    /**
-     * @return bool 安全化変換の対象か
-     */
-    public static function hasSafetyTransform(string $tag): bool
-    {
-        return isset(self::SAFETY_TRANSFORMS[$tag]);
-    }
 }

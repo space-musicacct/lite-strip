@@ -7,7 +7,6 @@ namespace LiteStrip\Fetcher;
 use LiteStrip\Config\BlockedNetworks;
 use LiteStrip\Config\ServerConfig;
 use React\Dns\Resolver\ResolverInterface;
-use React\Promise\PromiseInterface;
 
 use function React\Async\await;
 
