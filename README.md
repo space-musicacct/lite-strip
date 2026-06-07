@@ -60,11 +60,11 @@ console.log(data.data.detectedApis); // [...]
 ```python
 import requests
 
-response = requests.get(
-    "http://localhost:8080/",
-    params={"url": "https://example.com", "timezone": "UTC"}
-)
-data = response.json()
+def strip(url: str) -> dict:
+    res = requests.get("http://localhost:8080/", params={"url": url, "timezone": "UTC"})
+    return res.json()
+
+data = strip("https://example.com")
 print(data["data"]["title"])        # "Example Domain"
 print(data["data"]["contentHtml"])  # "<h1>Example Domain</h1>..."
 print(data["data"]["detectedApis"]) # [...]
