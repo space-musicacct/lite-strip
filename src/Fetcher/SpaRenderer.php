@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace LiteStrip\Fetcher;
 
+use React\EventLoop\Loop;
 use React\Promise\Deferred;
 use React\Promise\PromiseInterface;
 use RuntimeException;
+use Throwable;
+use function React\Promise\reject;
 
 class SpaRenderer
 {
@@ -35,8 +38,8 @@ class SpaRenderer
     public function renderAsync(string $url, int $timeout = 15): PromiseInterface
     {
         if (count($this->queue) >= self::MAX_QUEUE_SIZE) {
-            return \React\Promise\reject(
-                new \RuntimeException('SPA render queue is full. Try again later.')
+            return reject(
+                new RuntimeException('SPA render queue is full. Try again later.')
             );
         }
 
@@ -44,7 +47,7 @@ class SpaRenderer
         $this->queue[] = ['url' => $url, 'timeout' => $timeout, 'deferred' => $deferred];
 
         if (!$this->processing) {
-            \React\EventLoop\Loop::futureTick(fn() => $this->processNext());
+            Loop::futureTick(fn() => $this->processNext());
         }
 
         return $deferred->promise();
@@ -62,14 +65,14 @@ class SpaRenderer
         try {
             $result = $this->execWorker($item['url'], $item['timeout']);
             $item['deferred']->resolve($result);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $item['deferred']->reject($e);
         }
 
         $this->processing = false;
 
         if (!empty($this->queue)) {
-            \React\EventLoop\Loop::futureTick(fn() => $this->processNext());
+            Loop::futureTick(fn() => $this->processNext());
         }
     }
 
@@ -112,7 +115,7 @@ class SpaRenderer
         $exitCode = proc_close($process);
 
         if ($output === false || $output === '') {
-            throw new RuntimeException('SPA worker returned no output: ' . ($errorOutput ?: "exit code {$exitCode}"));
+            throw new RuntimeException('SPA worker returned no output: ' . ($errorOutput ?: "exit code $exitCode"));
         }
 
         $data = json_decode($output, true);

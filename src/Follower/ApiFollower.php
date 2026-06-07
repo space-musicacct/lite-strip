@@ -7,12 +7,13 @@ namespace LiteStrip\Follower;
 use LiteStrip\Config\ServerConfig;
 use LiteStrip\Fetcher\HtmlFetcher;
 use LiteStrip\Fetcher\UrlValidator;
+use Throwable;
 
-class ApiFollower
+readonly class ApiFollower
 {
     public function __construct(
-        private readonly HtmlFetcher $fetcher,
-        private readonly UrlValidator $urlValidator,
+        private HtmlFetcher  $fetcher,
+        private UrlValidator $urlValidator,
     ) {}
 
     /**
@@ -37,7 +38,7 @@ class ApiFollower
             try {
                 $this->urlValidator->validate($resolved);
                 $validEndpoints[] = $resolved;
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 // SSRF blocked — skip
             }
 
@@ -76,7 +77,7 @@ class ApiFollower
                         'statusMessage' => $reasonPhrase,
                         'contentType' => $contentType,
                         'data' => $parsedData,
-                        'error' => "HTTP_{$status}",
+                        'error' => "HTTP_$status",
                     ];
                 } else {
                     $apiData[] = [
@@ -86,7 +87,7 @@ class ApiFollower
                         'data' => $parsedData,
                     ];
                 }
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 $failedApis[] = [
                     'url' => $url,
                     'status' => 0,

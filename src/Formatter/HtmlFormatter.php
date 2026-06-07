@@ -17,13 +17,13 @@ class HtmlFormatter
     {
         $escapedUrl = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
 
-        $output = "<!-- LiteStrip: {$escapedUrl} -->\n";
-        $output .= "<p>Source: <a href=\"{$escapedUrl}\">{$escapedUrl}</a></p>\n";
+        $output = "<!-- LiteStrip: $escapedUrl -->\n";
+        $output .= "<p>Source: <a href=\"$escapedUrl\">$escapedUrl</a></p>\n";
         $output .= $contentHtml;
 
         if (!empty($apiData)) {
             $count = count($apiData);
-            $output .= "\n<!-- LiteStrip: API Data ({$count} endpoint" . ($count > 1 ? 's' : '') . " followed) -->\n";
+            $output .= "\n<!-- LiteStrip: API Data ($count endpoint" . ($count > 1 ? 's' : '') . " followed) -->\n";
 
             foreach ($apiData as $api) {
                 $output .= $this->formatApiSection($api);
@@ -32,7 +32,7 @@ class HtmlFormatter
 
         if (!empty($failedApis)) {
             $count = count($failedApis);
-            $output .= "\n<!-- LiteStrip: Failed APIs ({$count}) -->\n";
+            $output .= "\n<!-- LiteStrip: Failed APIs ($count) -->\n";
 
             foreach ($failedApis as $api) {
                 $output .= $this->formatFailedApiSection($api);
@@ -49,8 +49,8 @@ class HtmlFormatter
         $data = $this->formatData($api['data'] ?? null);
 
         $output = "<section>\n";
-        $output .= "  <h2>{$apiUrl} ({$status})</h2>\n";
-        $output .= "  <pre>{$data}</pre>\n";
+        $output .= "  <h2>$apiUrl ($status)</h2>\n";
+        $output .= "  <pre>$data</pre>\n";
         $output .= "</section>\n";
         return $output;
     }
@@ -63,11 +63,11 @@ class HtmlFormatter
         $error = htmlspecialchars($api['error'] ?? 'UNKNOWN', ENT_QUOTES, 'UTF-8');
 
         $output = "<section>\n";
-        $output .= "  <h2>{$apiUrl} ({$status} {$statusMessage}) — {$error}</h2>\n";
+        $output .= "  <h2>$apiUrl ($status $statusMessage) — $error</h2>\n";
 
-        if (isset($api['data']) && $api['data'] !== null) {
+        if ($api['data'] !== null) {
             $data = $this->formatData($api['data']);
-            $output .= "  <pre>{$data}</pre>\n";
+            $output .= "  <pre>$data</pre>\n";
         }
 
         $output .= "</section>\n";

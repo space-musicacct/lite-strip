@@ -4,23 +4,25 @@ declare(strict_types=1);
 
 namespace LiteStrip\Fetcher;
 
+use Exception;
 use InvalidArgumentException;
 use LiteStrip\Config\BlockedNetworks;
 use LiteStrip\Config\ServerConfig;
 use React\Dns\Resolver\ResolverInterface;
 use RuntimeException;
 
+use Throwable;
 use function React\Async\await;
 
-class UrlValidator
+readonly class UrlValidator
 {
     public function __construct(
-        private readonly ResolverInterface $dnsResolver
+        private ResolverInterface $dnsResolver
     ) {}
 
     /**
      * @throws InvalidArgumentException URL が不正な場合
-     * @throws RuntimeException         SSRF ブロック時
+     * @throws RuntimeException|Throwable         SSRF ブロック時
      */
     public function validate(string $url): void
     {
@@ -46,7 +48,7 @@ class UrlValidator
     }
 
     /**
-     * @throws RuntimeException SSRF ブロック時
+     * @throws RuntimeException|Throwable SSRF ブロック時
      */
     public function validateHost(string $host): void
     {
@@ -60,11 +62,11 @@ class UrlValidator
         try {
             /** @var string|null $ip */
             $ip = await($this->dnsResolver->resolve($host));
-        } catch (\Exception $e) {
+        } catch (Exception) {
             throw new RuntimeException('DNS resolution failed for host: ' . $host);
         }
 
-        if ($ip === null || !is_string($ip)) {
+        if (!is_string($ip)) {
             throw new RuntimeException('DNS resolution returned no result for host: ' . $host);
         }
 
