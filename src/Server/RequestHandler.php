@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace LiteStrip\Server;
 
+use DateInvalidTimeZoneException;
+use DateTimeImmutable;
+use DateTimeZone;
 use LiteStrip\Config\ServerConfig;
 use LiteStrip\Fetcher\HtmlFetcher;
 use LiteStrip\Fetcher\SpaRenderer;
@@ -221,10 +224,14 @@ readonly class RequestHandler
         return new Response(200, $commonHeaders, $body);
     }
 
+    /**
+     * @throws \DateInvalidTimeZoneException
+     * @throws \DateMalformedStringException
+     */
     private function buildJsonBody(string $url, string $finalUrl, string $title, string $cleanHtml, array $meta, array $apiResult, ?string $timezone, int $fetchTimeMs, int $processTimeMs, int $totalTimeMs, int $originalSize): string
     {
-        $tz = $timezone ? new \DateTimeZone($timezone) : null;
-        $fetchedAt = new \DateTimeImmutable('now', $tz);
+        $tz = $timezone ? new DateTimeZone($timezone) : null;
+        $fetchedAt = new DateTimeImmutable('now', $tz);
 
         $jsonData = [
             'url' => $url,
@@ -293,8 +300,8 @@ readonly class RequestHandler
         $timezone = $params['timezone'] ?? null;
         if ($timezone !== null) {
             try {
-                new \DateTimeZone($timezone);
-            } catch (\DateInvalidTimeZoneException) {
+                new DateTimeZone($timezone);
+            } catch (DateInvalidTimeZoneException) {
                 throw new InvalidArgumentException("Invalid timezone: $timezone");
             }
         }
