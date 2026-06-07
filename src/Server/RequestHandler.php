@@ -90,6 +90,8 @@ readonly class RequestHandler
             return $this->errorResponse(400, 'INVALID_URL', $e->getMessage());
         } catch (RuntimeException $e) {
             return $this->errorResponse(403, 'BLOCKED_URL', $e->getMessage());
+        } catch (Throwable $e) {
+            return $this->errorResponse(500, 'INTERNAL_ERROR', 'URL validation failed: ' . $e->getMessage());
         }
 
         // 2. HTML 取得
@@ -126,6 +128,8 @@ readonly class RequestHandler
                 return $this->errorResponse(502, 'RESPONSE_TOO_LARGE', $msg);
             }
             return $this->errorResponse(502, 'FETCH_FAILED', $msg);
+        } catch (Throwable $e) {
+            return $this->errorResponse(500, 'INTERNAL_ERROR', 'Fetch failed: ' . $e->getMessage());
         }
 
         return $this->buildResponse($url, $format, $followApis, $isFull, $maxApis, $startTime, $fetchResult);
