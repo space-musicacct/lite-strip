@@ -146,6 +146,28 @@ services:
       - ENABLE_SPA=false
 ```
 
+### Port Conflicts
+
+If port 8080 is already in use, change the host-side port mapping:
+
+```yaml
+services:
+  lite-strip:
+    ports:
+      - "3000:8080"  # Use port 3000 instead
+```
+
+Or set the `PORT` environment variable to change the container's listening port:
+
+```yaml
+services:
+  lite-strip:
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+```
+
 ## How It Works
 
 ```

@@ -140,6 +140,28 @@ services:
       - ENABLE_SPA=false
 ```
 
+### ポート競合時の対処
+
+ポート 8080 が既に使われている場合、ホスト側のポートマッピングを変更してください:
+
+```yaml
+services:
+  lite-strip:
+    ports:
+      - "3000:8080"  # ポート 3000 を使用
+```
+
+コンテナのリスニングポート自体を変更する場合は `PORT` 環境変数も設定します:
+
+```yaml
+services:
+  lite-strip:
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+```
+
 ## 仕組み
 
 ```
