@@ -38,6 +38,11 @@ class BlockedNetworksTest extends TestCase
             'benchmarking 198.18.0.1' => ['198.18.0.1'],
             'TEST-NET-2 198.51.100.1' => ['198.51.100.1'],
             'TEST-NET-3 203.0.113.1' => ['203.0.113.1'],
+            '6to4 relay anycast 192.88.99.1' => ['192.88.99.1'],
+            'multicast 224.0.0.1' => ['224.0.0.1'],
+            'SSDP multicast 239.255.255.250' => ['239.255.255.250'],
+            'reserved 240.0.0.1' => ['240.0.0.1'],
+            'broadcast 255.255.255.255' => ['255.255.255.255'],
         ];
     }
 
@@ -72,6 +77,14 @@ class BlockedNetworksTest extends TestCase
             'ULA fc00::1' => ['fc00::1'],
             'link-local fe80::1' => ['fe80::1'],
             'link-local fe80::abcd:1234' => ['fe80::abcd:1234'],
+            'unspecified ::' => ['::'],
+            'v4-mapped loopback ::ffff:127.0.0.1' => ['::ffff:127.0.0.1'],
+            'v4-mapped private ::ffff:10.0.0.1' => ['::ffff:10.0.0.1'],
+            'v4-mapped docker ::ffff:172.19.0.8' => ['::ffff:172.19.0.8'],
+            'NAT64 loopback 64:ff9b::7f00:1' => ['64:ff9b::7f00:1'],
+            '6to4 loopback 2002:7f00:1::1' => ['2002:7f00:1::1'],
+            'documentation 2001:db8::1' => ['2001:db8::1'],
+            'multicast ff02::1' => ['ff02::1'],
         ];
     }
 
@@ -86,6 +99,8 @@ class BlockedNetworksTest extends TestCase
         return [
             'Google DNS 2001:4860:4860::8888' => ['2001:4860:4860::8888'],
             'Cloudflare 2606:4700:4700::1111' => ['2606:4700:4700::1111'],
+            'v4-mapped public ::ffff:8.8.8.8' => ['::ffff:8.8.8.8'],
+            'NAT64 public 64:ff9b::808:808' => ['64:ff9b::808:808'],
         ];
     }
 

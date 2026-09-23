@@ -8,6 +8,7 @@ date_default_timezone_set('Asia/Tokyo');
 
 use LiteStrip\Config\ServerConfig;
 use LiteStrip\Fetcher\HtmlFetcher;
+use LiteStrip\Fetcher\SafeConnector;
 use LiteStrip\Fetcher\SpaRenderer;
 use LiteStrip\Fetcher\UrlValidator;
 use LiteStrip\Follower\ApiFollower;
@@ -19,13 +20,22 @@ use LiteStrip\Processor\DomProcessor;
 use LiteStrip\Processor\ScriptAnalyzer;
 use LiteStrip\Server\RequestHandler;
 use Psr\Http\Message\ServerRequestInterface;
+use React\Dns\Resolver\Factory;
+use React\EventLoop\Loop;
+use React\Http\Browser;
 use React\Http\HttpServer;
+use React\Http\Message\Response;
 use React\Socket\SocketServer;
 
 $port = (int) ($argv[1] ?? getenv('PORT') ?: ServerConfig::DEFAULT_PORT);
 
-$dnsResolver = new React\Dns\Resolver\Factory()->create('8.8.8.8');
-$browser = new React\Http\Browser();
+$dnsResolver = new Factory()->create('8.8.8.8');
+
+// All outbound HTTP goes through SafeConnector: it re-checks the resolved IP at
+// connect time so the address dialed is always one that passed the blocklist,
+// closing the TOCTOU gap between UrlValidator and the HTTP client's own resolver.
+$safeConnector = new SafeConnector($dnsResolver);
+$browser = new Browser($safeConnector);
 
 $urlValidator = new UrlValidator($dnsResolver);
 $htmlFetcher = new HtmlFetcher($browser, $urlValidator);
@@ -58,7 +68,7 @@ $server = new HttpServer(function (ServerRequestInterface $request) use ($handle
         return $handler->handle($request);
     } catch (Throwable $e) {
         error_log('[LiteStrip] Unhandled exception: ' . $e->getMessage());
-        return new React\Http\Message\Response(500, [
+        return new Response(500, [
             'Content-Type' => 'application/json; charset=utf-8',
             'Access-Control-Allow-Origin' => '*',
         ], json_encode([
@@ -78,5 +88,5 @@ $shutdown = function () use ($socket) {
     $socket->close();
 };
 
-React\EventLoop\Loop::addSignal(SIGTERM, $shutdown);
-React\EventLoop\Loop::addSignal(SIGINT, $shutdown);
+Loop::addSignal(SIGTERM, $shutdown);
+Loop::addSignal(SIGINT, $shutdown);
