@@ -40,7 +40,10 @@ $browser = new Browser($safeConnector);
 $urlValidator = new UrlValidator($dnsResolver);
 $htmlFetcher = new HtmlFetcher($browser, $urlValidator);
 
-$enableSpa = filter_var(getenv('ENABLE_SPA') ?: ServerConfig::ENABLE_SPA_DEFAULT, FILTER_VALIDATE_BOOLEAN);
+// Read with !== false (not ?:) so that ENABLE_SPA=0 / "false" actually disables it
+// instead of falling through to the default.
+$enableSpaEnv = getenv('ENABLE_SPA');
+$enableSpa = filter_var($enableSpaEnv !== false ? $enableSpaEnv : ServerConfig::ENABLE_SPA_DEFAULT, FILTER_VALIDATE_BOOLEAN);
 $chromiumHost = getenv('CHROMIUM_HOST') ?: null;
 $chromiumPort = (int) (getenv('CHROMIUM_PORT') ?: 9222);
 $spaRenderer = ($enableSpa && $chromiumHost) ? new SpaRenderer($chromiumHost, $chromiumPort) : null;

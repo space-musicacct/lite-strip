@@ -83,6 +83,8 @@ class BlockedNetworksTest extends TestCase
             'v4-mapped docker ::ffff:172.19.0.8' => ['::ffff:172.19.0.8'],
             'NAT64 loopback 64:ff9b::7f00:1' => ['64:ff9b::7f00:1'],
             '6to4 loopback 2002:7f00:1::1' => ['2002:7f00:1::1'],
+            'IPv4-translated loopback ::ffff:0:7f00:1' => ['::ffff:0:7f00:1'],
+            'Teredo 2001::abcd' => ['2001::abcd'],
             'documentation 2001:db8::1' => ['2001:db8::1'],
             'multicast ff02::1' => ['ff02::1'],
         ];
@@ -101,6 +103,7 @@ class BlockedNetworksTest extends TestCase
             'Cloudflare 2606:4700:4700::1111' => ['2606:4700:4700::1111'],
             'v4-mapped public ::ffff:8.8.8.8' => ['::ffff:8.8.8.8'],
             'NAT64 public 64:ff9b::808:808' => ['64:ff9b::808:808'],
+            'IPv4-translated public ::ffff:0:808:808' => ['::ffff:0:808:808'],
         ];
     }
 

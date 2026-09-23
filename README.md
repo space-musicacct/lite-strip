@@ -22,7 +22,7 @@ LiteStrip takes a URL and returns clean, structured HTML with all styling attrib
 A public instance is available at **[https://lite-strip.nx-space.com/](https://lite-strip.nx-space.com/)** — no installation required.
 
 > **Note:** `is_spa=true` is disabled on the public instance due to server resource constraints.
-> To use SPA rendering, please self-host with `ENABLE_SPA=true`.
+> To use SPA rendering, self-host with `ENABLE_SPA=true` — but read the SSRF security note under [Configuration](#environment-variables) first: the SPA path is not covered by the connect-time SSRF protection and must run Chromium in an isolated network.
 
 ## Quick Start
 
@@ -165,9 +165,11 @@ print(data["data"]["detectedApis"]) # [...]
 |----------|---------|-------------|
 | `PORT` | `8080` | HTTP server port |
 | `TZ` | `UTC` | Timezone |
-| `ENABLE_SPA` | `true` | Enable SPA rendering mode |
+| `ENABLE_SPA` | `false` | Enable SPA rendering mode (headless Chromium). ⚠️ See the security note below before enabling |
 | `CHROMIUM_HOST` | - | Chromium container hostname (required for SPA) |
 | `CHROMIUM_PORT` | `9222` | Chromium DevTools Protocol port |
+
+> ⚠️ **SPA rendering and SSRF.** The connect-time SSRF protection covers the normal fetch path only. The SPA path hands the URL to headless Chromium, which resolves and connects on its own and then follows redirects, subresources and page JavaScript to **any address it can route to** — including private ranges and cloud metadata (`169.254.169.254`). Only enable `ENABLE_SPA=true` when Chromium runs in an isolated network with **no route to internal services or metadata endpoints**. Full egress filtering for the SPA path is tracked as a follow-up (see the repository issues / advisory GHSA-j8rr-cp69-rg4w).
 
 ### Docker Compose
 

@@ -71,6 +71,9 @@ readonly class UrlValidator
      */
     public function validateHost(string $host): void
     {
+        // Early reject for friendlier errors only. This samples a single A record and is
+        // NOT the security boundary — SafeConnector re-checks the actual IP at connect time
+        // and is the authoritative SSRF enforcement point. Do not rely on this alone.
         if (filter_var($host, FILTER_VALIDATE_IP)) {
             if (BlockedNetworks::isBlocked($host)) {
                 throw new RuntimeException('The requested URL resolves to a private network address');

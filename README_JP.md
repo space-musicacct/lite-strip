@@ -20,7 +20,9 @@ URL を渡すと、スタイリング属性を除去したクリーンな構造 
 **[https://lite-strip.nx-space.com/](https://lite-strip.nx-space.com/)** でインストール不要ですぐに利用できます。
 
 > **注意:** 公開インスタンスではサーバーリソースの制約により `is_spa=true` は使用できません。
-> SPA レンダリングを利用するには、`ENABLE_SPA=true` でセルフホストしてください。
+> SPA レンダリングを利用するには `ENABLE_SPA=true` でセルフホストしてください。ただし先に下記の SSRF 注意書きを必ず読むこと。
+>
+> ⚠️ **SPA レンダリングと SSRF:** 接続時 SSRF 対策が効くのは通常の取得経路のみ。SPA 経路は URL をヘッドレス Chromium に渡し、Chromium は自前で解決・接続し、リダイレクト/サブリソース/ページ JS を辿って**到達可能な任意のアドレス**（プライベート範囲やクラウドメタデータ `169.254.169.254` を含む）へアクセスする。`ENABLE_SPA=true` は、Chromium を**内部サービスやメタデータへ経路の無い隔離ネットワーク**で動かす場合のみ有効化すること。SPA 経路の egress 完全フィルタは後続対応（リポジトリの issue / advisory GHSA-j8rr-cp69-rg4w 参照）。
 
 ## クイックスタート
 
@@ -163,7 +165,7 @@ print(data["data"]["detectedApis"]) # [...]
 |------|---------|------|
 | `PORT` | `8080` | HTTP サーバーポート |
 | `TZ` | `UTC` | タイムゾーン |
-| `ENABLE_SPA` | `true` | SPA レンダリングモードの有効/無効 |
+| `ENABLE_SPA` | `false` | SPA レンダリング（ヘッドレス Chromium）の有効/無効。⚠️ 有効化前に下の security note を参照 |
 | `CHROMIUM_HOST` | - | Chromium コンテナのホスト名 (SPA 時に必要) |
 | `CHROMIUM_PORT` | `9222` | Chromium DevTools Protocol ポート |
 

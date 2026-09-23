@@ -82,11 +82,12 @@ final class BlockedNetworks
      * Checks an IPv6 address against known blocked prefixes.
      *
      * Blocks the unspecified address (::), loopback (::1), IPv4-mapped
-     * (::ffff:0:0/96), deprecated IPv4-compatible (::/96), NAT64 (64:ff9b::/96)
-     * and 6to4 (2002::/16) — for the last three the embedded IPv4 address is
-     * re-checked against the IPv4 blocklist so an internal target cannot be
-     * smuggled inside an IPv6 wrapper — plus documentation (2001:db8::/32),
-     * ULA (fc00::/7), link-local (fe80::/10) and multicast (ff00::/8).
+     * (::ffff:0:0/96), IPv4-translated (::ffff:0:0:0/96), deprecated
+     * IPv4-compatible (::/96), NAT64 (64:ff9b::/96) and 6to4 (2002::/16) — for
+     * these the embedded IPv4 address is re-checked against the IPv4 blocklist
+     * so an internal target cannot be smuggled inside an IPv6 wrapper — plus
+     * Teredo (2001::/32), documentation (2001:db8::/32), ULA (fc00::/7),
+     * link-local (fe80::/10) and multicast (ff00::/8).
      *
      * @param string $ip IPv6 address to check
      * @return bool True if the IP belongs to a blocked IPv6 range
@@ -112,6 +113,12 @@ final class BlockedNetworks
             return self::matchesIpv4CidrList(self::embeddedIpv4($bytes, 12));
         }
 
+        // IPv4-translated ::ffff:0:a.b.c.d (SIIT, ::ffff:0:0:0/96) — check the embedded IPv4 address.
+        $first8Zero = array_sum(array_slice($bytes, 0, 8)) === 0;
+        if ($first8Zero && $bytes[8] === 0xFF && $bytes[9] === 0xFF && $bytes[10] === 0 && $bytes[11] === 0) {
+            return self::matchesIpv4CidrList(self::embeddedIpv4($bytes, 12));
+        }
+
         // Deprecated IPv4-compatible ::a.b.c.d (first 96 bits zero, non-trivial tail).
         if ($first10Zero && $bytes[10] === 0 && $bytes[11] === 0) {
             return self::matchesIpv4CidrList(self::embeddedIpv4($bytes, 12));
@@ -125,6 +132,11 @@ final class BlockedNetworks
         // 6to4 2002::/16 — the embedded IPv4 address is at bytes 2..5.
         if ($bytes[0] === 0x20 && $bytes[1] === 0x02) {
             return self::matchesIpv4CidrList(self::embeddedIpv4($bytes, 2));
+        }
+
+        // Teredo 2001::/32.
+        if ($bytes[0] === 0x20 && $bytes[1] === 0x01 && $bytes[2] === 0x00 && $bytes[3] === 0x00) {
+            return true;
         }
 
         // Documentation 2001:db8::/32.

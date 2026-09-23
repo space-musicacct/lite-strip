@@ -55,5 +55,5 @@ final class ServerConfig
     public const string USER_AGENT = 'LiteStrip/' . self::VERSION . ' (+https://github.com/space-musicacct/lite-strip)';
 
     /** @var bool Default value for SPA rendering mode */
-    public const bool ENABLE_SPA_DEFAULT = true;
+    public const bool ENABLE_SPA_DEFAULT = false;
 }

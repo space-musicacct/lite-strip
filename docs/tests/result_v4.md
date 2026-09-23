@@ -4,7 +4,7 @@
 - **PHPUnit:** 13.2.0
 - **PHP:** 8.5.10 (Docker: php:8.5-cli-alpine, image `nx-spacecom-lite-strip`)
 - **Execution:** `docker compose exec lite-strip php vendor/bin/phpunit`
-- **Result:** 156 tests, 212 assertions — **ALL PASSED**
+- **Result:** 159 tests, 215 assertions — **ALL PASSED**
   - 30 PHPUnit notices are reported. They are pre-existing / environmental (surfaced by PHP 8.5.10 + PHPUnit 13.2); `SafeConnector` and `BlockedNetworks` both run clean with **zero notices** in isolation, so none originate from the code added in this change.
 
 ---
@@ -13,11 +13,11 @@
 
 | | v3 | v4 |
 |---|---|---|
-| Tests | 134 | 156 (+22) |
-| Assertions | 183 | 212 (+29) |
+| Tests | 134 | 159 (+25) |
+| Assertions | 183 | 215 (+32) |
 | Test suites | 8 | 9 (+1) |
 | New: SafeConnector | - | 7 tests |
-| BlockedNetworks | 32 | 47 (+15) |
+| BlockedNetworks | 32 | 50 (+18) |
 
 ## Background
 
@@ -42,11 +42,19 @@ The fix routes every outbound connection through `SafeConnector`: it resolves th
 | Family | Newly-covered ranges | Cases |
 |--------|----------------------|-------|
 | IPv4 | 192.88.99.0/24 (6to4 relay anycast), 224.0.0.0/4 (multicast), 240.0.0.0/4 (reserved, incl. 255.255.255.255) | 5 blocked |
-| IPv6 | `::` (unspecified), `::ffff:0:0/96` (IPv4-mapped), `::/96` (IPv4-compatible), `64:ff9b::/96` (NAT64), `2002::/16` (6to4), `2001:db8::/32` (documentation), `ff00::/8` (multicast) | 8 blocked |
-| IPv6 | IPv4-mapped / NAT64 wrapping a **public** address (`::ffff:8.8.8.8`, `64:ff9b::808:808`) stays allowed | 2 allowed |
+| IPv6 | `::` (unspecified), `::ffff:0:0/96` (IPv4-mapped), `::ffff:0:0:0/96` (IPv4-translated), `::/96` (IPv4-compatible), `64:ff9b::/96` (NAT64), `2002::/16` (6to4), `2001::/32` (Teredo), `2001:db8::/32` (documentation), `ff00::/8` (multicast) | 10 blocked |
+| IPv6 | IPv4-mapped / NAT64 / IPv4-translated wrapping a **public** address (`::ffff:8.8.8.8`, `64:ff9b::808:808`, `::ffff:0:808:808`) stays allowed | 3 allowed |
 
-For IPv4-mapped, IPv4-compatible, NAT64 and 6to4 addresses the embedded IPv4 address is re-checked against the IPv4 blocklist, so an internal target cannot be smuggled inside an IPv6 wrapper.
+For IPv4-mapped, IPv4-translated, IPv4-compatible, NAT64 and 6to4 addresses the embedded IPv4 address is re-checked against the IPv4 blocklist, so an internal target cannot be smuggled inside an IPv6 wrapper.
+
+## Review follow-ups (GHSA-j8rr-cp69-rg4w)
+
+Addressed from the private review:
+
+- **SPA default flipped off.** `ENABLE_SPA_DEFAULT` is now `false` (was `true`); `server.php` reads `ENABLE_SPA` with `!== false` so `ENABLE_SPA=0` / `false` actually disables instead of falling through to the default.
+- **IPv6 blocklist tightened** with Teredo (`2001::/32`) and IPv4-translated (`::ffff:0:0:0/96`).
+- **`UrlValidator::validateHost()`** documented as an early-reject only; `SafeConnector` is the authoritative enforcement point.
 
 ## Scope note
 
-`SafeConnector` covers the page fetch, manual redirects, discovered API endpoints and external JS fetches (all share one `Browser`). The SPA path (headless Chromium) resolves and connects on its own and is **not** covered here; it is disabled in production (`ENABLE_SPA=false`).
+`SafeConnector` covers the page fetch, manual redirects, discovered API endpoints and external JS fetches (all share one `Browser`). The SPA path (headless Chromium) resolves and connects on its own and is **not** covered by this fix. As of 1.0.2 SPA is **disabled by default** (`ENABLE_SPA=false`), and enabling it requires running Chromium in an isolated network; full egress filtering for the SPA path is tracked as a follow-up.
