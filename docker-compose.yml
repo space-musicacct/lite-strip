@@ -25,7 +25,11 @@ services:
     image: zenika/alpine-chrome:latest
     container_name: lite-strip-chromium
     restart: on-failure:5
-    command: ["chromium-browser", "--headless", "--no-sandbox", "--disable-gpu", "--remote-debugging-address=0.0.0.0", "--remote-debugging-port=9222", "--remote-allow-origins=*"]
+    # remote-allow-origins is scoped to the exact Origin chrome-php sends (http://127.0.0.1),
+    # NOT "*": with "*" a page rendered in the SPA path could open a DevTools WebSocket to
+    # :9222 from its own origin and take over the browser (CDP: file:// reads, cross-render
+    # access). Locking the allowed Origin rejects that while keeping chrome-php connected.
+    command: ["chromium-browser", "--headless", "--no-sandbox", "--disable-gpu", "--remote-debugging-address=0.0.0.0", "--remote-debugging-port=9222", "--remote-allow-origins=http://127.0.0.1"]
     expose:
       - "9222"
     environment:
