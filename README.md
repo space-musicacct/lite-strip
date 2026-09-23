@@ -169,7 +169,7 @@ print(data["data"]["detectedApis"]) # [...]
 | `CHROMIUM_HOST` | - | Chromium container hostname (required for SPA) |
 | `CHROMIUM_PORT` | `9222` | Chromium DevTools Protocol port |
 
-> ⚠️ **SPA rendering and SSRF.** The connect-time SSRF protection covers the normal fetch path only. The SPA path hands the URL to headless Chromium, which resolves and connects on its own and then follows redirects, subresources and page JavaScript to **any address it can route to** — including private ranges and cloud metadata (`169.254.169.254`). Only enable `ENABLE_SPA=true` when Chromium runs in an isolated network with **no route to internal services or metadata endpoints**. Full egress filtering for the SPA path is tracked as a follow-up (see the repository issues / advisory GHSA-j8rr-cp69-rg4w).
+> ⚠️ **SPA rendering and SSRF.** The connect-time SSRF protection covers the normal fetch path only. The SPA path hands the URL to headless Chromium, which resolves and connects on its own and then follows redirects, subresources and page JavaScript to **any address it can route to** — including private ranges and cloud metadata (`169.254.169.254`). Only enable `ENABLE_SPA=true` when Chromium runs in an isolated network with **no route to internal services or metadata endpoints**. If you run Chromium yourself instead of the bundled container, do **not** launch it with `--remote-allow-origins=*` — scope it to `--remote-allow-origins=http://127.0.0.1` (the only Origin the client uses), or a page rendered in the SPA path can take over the browser via DevTools. Full egress filtering for the SPA path is tracked as a follow-up (see the repository issues / advisory GHSA-j8rr-cp69-rg4w).
 
 ### Docker Compose
 
