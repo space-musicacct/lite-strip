@@ -1,3 +1,15 @@
+> [!CAUTION]
+> # ⚠️ END OF LIFE — LiteStrip is no longer maintained
+>
+> **As of v1.1.0 (2026-10-08), LiteStrip has reached end of life.** This is the final release.
+>
+> - **No further maintenance, bug fixes or security updates** will be provided.
+> - The **public instance (`lite-strip.nx-space.com`) has been discontinued** and now returns `410 Gone`.
+> - This repository is **archived (read-only)**. Issues and pull requests are no longer accepted.
+> - Known limitation that will **not** be fixed: the SPA rendering path is not covered by the connect-time SSRF protection (see [GHSA-j8rr-cp69-rg4w](https://github.com/space-musicacct/lite-strip/security/advisories/GHSA-j8rr-cp69-rg4w)).
+>
+> If you self-host LiteStrip, you do so at your own risk. The code remains available under the MIT License, and you are free to fork it.
+
 # LiteStrip
 
 **[日本語版 README はこちら (README_JP.md)](README_JP.md)**
@@ -17,12 +29,11 @@ LiteStrip takes a URL and returns clean, structured HTML with all styling attrib
 - **PHP Complete** — Core extraction runs on PHP + ReactPHP only. Optional SPA rendering uses a separate headless Chromium container
 - **Docker Ready** — Single `docker compose up -d --build` to run
 
-## Public Instance
+## Public Instance (Discontinued)
 
-A public instance is available at **[https://lite-strip.nx-space.com/](https://lite-strip.nx-space.com/)** — no installation required.
+The public instance at `lite-strip.nx-space.com` was **discontinued on 2026-10-08** and now returns `410 Gone`. To use LiteStrip, self-host it.
 
-> **Note:** `is_spa=true` is disabled on the public instance due to server resource constraints.
-> To use SPA rendering, self-host with `ENABLE_SPA=true` — but read the SSRF security note under [Configuration](#environment-variables) first: the SPA path is not covered by the connect-time SSRF protection and must run Chromium in an isolated network.
+> **Note:** If you enable SPA rendering (`ENABLE_SPA=true`), read the SSRF security note under [Configuration](#environment-variables) first: the SPA path is not covered by the connect-time SSRF protection and must run Chromium in an isolated network.
 
 ## Quick Start
 
@@ -169,7 +180,7 @@ print(data["data"]["detectedApis"]) # [...]
 | `CHROMIUM_HOST` | - | Chromium container hostname (required for SPA) |
 | `CHROMIUM_PORT` | `9222` | Chromium DevTools Protocol port |
 
-> ⚠️ **SPA rendering and SSRF.** The connect-time SSRF protection covers the normal fetch path only. The SPA path hands the URL to headless Chromium, which resolves and connects on its own and then follows redirects, subresources and page JavaScript to **any address it can route to** — including private ranges and cloud metadata (`169.254.169.254`). Only enable `ENABLE_SPA=true` when Chromium runs in an isolated network with **no route to internal services or metadata endpoints**. If you run Chromium yourself instead of the bundled container, do **not** launch it with `--remote-allow-origins=*` — scope it to `--remote-allow-origins=http://127.0.0.1` (the only Origin the client uses), or a page rendered in the SPA path can take over the browser via DevTools. Full egress filtering for the SPA path is tracked as a follow-up (see the repository issues / advisory GHSA-j8rr-cp69-rg4w).
+> ⚠️ **SPA rendering and SSRF.** The connect-time SSRF protection covers the normal fetch path only. The SPA path hands the URL to headless Chromium, which resolves and connects on its own and then follows redirects, subresources and page JavaScript to **any address it can route to** — including private ranges and cloud metadata (`169.254.169.254`). Only enable `ENABLE_SPA=true` when Chromium runs in an isolated network with **no route to internal services or metadata endpoints**. If you run Chromium yourself instead of the bundled container, do **not** launch it with `--remote-allow-origins=*` — scope it to `--remote-allow-origins=http://127.0.0.1` (the only Origin the client uses), or a page rendered in the SPA path can take over the browser via DevTools. Full egress filtering for the SPA path will **not** be implemented, as the project has reached end of life (see advisory GHSA-j8rr-cp69-rg4w).
 
 ### Docker Compose
 

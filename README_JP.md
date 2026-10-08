@@ -1,3 +1,15 @@
+> [!CAUTION]
+> # ⚠️ 提供終了 (EOL) — LiteStrip の保守は終了しました
+>
+> **v1.1.0 (2026-10-08) をもって、LiteStrip は提供終了 (End of Life) となりました。** v1.1.0 が最終リリースです。
+>
+> - 今後、**保守・バグ修正・セキュリティアップデートは一切行いません。**
+> - **公開インスタンス (`lite-strip.nx-space.com`) は提供を終了**し、現在は `410 Gone` を返します。
+> - このリポジトリは**アーカイブ済み (読み取り専用)** です。Issue / Pull Request は受け付けていません。
+> - 修正されない既知の制限: SPA レンダリング経路は接続時 SSRF 対策の対象外です ([GHSA-j8rr-cp69-rg4w](https://github.com/space-musicacct/lite-strip/security/advisories/GHSA-j8rr-cp69-rg4w) 参照)。
+>
+> セルフホストする場合は自己責任でご利用ください。コードは引き続き MIT ライセンスで利用でき、フォークも自由です。
+
 # LiteStrip
 
 PHP (ReactPHP) 製の軽量 AI 最適化 HTML 変換ツール。
@@ -15,14 +27,13 @@ URL を渡すと、スタイリング属性を除去したクリーンな構造 
 - **PHP 完結** — 通常の抽出処理は PHP + ReactPHP のみで動作。SPA レンダリングを有効化した場合のみ、別コンテナの headless Chromium を使用
 - **Docker 対応** — `docker compose up -d --build` ですぐ動く
 
-## 公開インスタンス
+## 公開インスタンス (提供終了)
 
-**[https://lite-strip.nx-space.com/](https://lite-strip.nx-space.com/)** でインストール不要ですぐに利用できます。
+`lite-strip.nx-space.com` の公開インスタンスは **2026-10-08 に提供を終了**し、現在は `410 Gone` を返します。利用する場合はセルフホストしてください。
 
-> **注意:** 公開インスタンスではサーバーリソースの制約により `is_spa=true` は使用できません。
-> SPA レンダリングを利用するには `ENABLE_SPA=true` でセルフホストしてください。ただし先に下記の SSRF 注意書きを必ず読むこと。
+> **注意:** SPA レンダリング (`ENABLE_SPA=true`) を有効化する場合は、先に下記の SSRF 注意書きを必ず読むこと。
 >
-> ⚠️ **SPA レンダリングと SSRF:** 接続時 SSRF 対策が効くのは通常の取得経路のみ。SPA 経路は URL をヘッドレス Chromium に渡し、Chromium は自前で解決・接続し、リダイレクト/サブリソース/ページ JS を辿って**到達可能な任意のアドレス**（プライベート範囲やクラウドメタデータ `169.254.169.254` を含む）へアクセスする。`ENABLE_SPA=true` は、Chromium を**内部サービスやメタデータへ経路の無い隔離ネットワーク**で動かす場合のみ有効化すること。同梱コンテナを使わず Chromium を自前起動する場合は、`--remote-allow-origins=*` を**使わず** `--remote-allow-origins=http://127.0.0.1`（クライアントが使う唯一の Origin）に限定すること。さもないと SPA 経路で描画されたページが DevTools 経由でブラウザを乗っ取れる。SPA 経路の egress 完全フィルタは後続対応（リポジトリの issue / advisory GHSA-j8rr-cp69-rg4w 参照）。
+> ⚠️ **SPA レンダリングと SSRF:** 接続時 SSRF 対策が効くのは通常の取得経路のみ。SPA 経路は URL をヘッドレス Chromium に渡し、Chromium は自前で解決・接続し、リダイレクト/サブリソース/ページ JS を辿って**到達可能な任意のアドレス**（プライベート範囲やクラウドメタデータ `169.254.169.254` を含む）へアクセスする。`ENABLE_SPA=true` は、Chromium を**内部サービスやメタデータへ経路の無い隔離ネットワーク**で動かす場合のみ有効化すること。同梱コンテナを使わず Chromium を自前起動する場合は、`--remote-allow-origins=*` を**使わず** `--remote-allow-origins=http://127.0.0.1`（クライアントが使う唯一の Origin）に限定すること。さもないと SPA 経路で描画されたページが DevTools 経由でブラウザを乗っ取れる。SPA 経路の egress 完全フィルタは、提供終了に伴い実装しない（advisory GHSA-j8rr-cp69-rg4w 参照）。
 
 ## クイックスタート
 
